@@ -8,8 +8,8 @@
 #include "string_fmt.hpp"
 
 
-typedef char32_t unichar;
 typedef std::u32string ustring;
+typedef ustring::value_type unichar;
 
 
 class UnicodeError : public std::runtime_error {
