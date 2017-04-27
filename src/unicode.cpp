@@ -1,4 +1,5 @@
 #include <cassert>
+#include <cstring>
 #include "unicode.h"
 
 
@@ -109,55 +110,48 @@ char *u8_write_char(char *buf, unichar ch) {
 }
 
 
-size_t u8_unicode_len(const char *s) {
+static size_t  _u8_unicode_len_bound(const char *start, const char *end) {
+    assert(end >= start);
     size_t ans = 0;
-    for (const char *start = s; *start != '\0'; start += u8_read_char_len(start)) {
+    for (; start < end; start += u8_read_char_len(start)) {
         ans++;
     }
     return ans;
 }
 
 
-// FIXME: duplicated code
+size_t u8_unicode_len(const char *s) {
+    return _u8_unicode_len_bound(s, s + std::strlen(s));
+}
+
+
 size_t u8_unicode_len(const std::string &s) {
-    size_t ans = 0;
-    const char *const end = s.data() + s.size();
-    for (const char *start = s.data(); start < end; start += u8_read_char_len(start)) {
-        ans++;
-    }
-    return ans;
+    return _u8_unicode_len_bound(s.data(), s.data() + s.size());
 }
 
 
 // TODO: reject overlong encoding
-ustring u8_decode(const char *s) {
-    size_t len = u8_unicode_len(s);
+static ustring _u8_decode(const char *start, const char *end) {
     ustring ans;
-    ans.reserve(len);
+//    size_t len = _u8_unicode_len_bound(start, end);
+//    ans.reserve(len);
 
-    while (*s != '\0') {
-        int clen = u8_read_char_len(s);
-        ans.push_back(u8_read_char(s));
-        s += clen;
-    }
-    return ans;
-}
-
-
-// FIXME: duplicated code
-ustring u8_decode(const std::string &str) {
-    size_t len = u8_unicode_len(str);
-    ustring ans;
-    ans.reserve(len);
-
-    const char *const end = str.data() + str.size();
-    const char *start = str.data();
     while (start < end) {
         int clen = u8_read_char_len(start);
         ans.push_back(u8_read_char(start));
         start += clen;
     }
     return ans;
+}
+
+
+ustring u8_decode(const char *s) {
+    return _u8_decode(s, s + strlen(s));
+}
+
+
+ustring u8_decode(const std::string &str) {
+    return _u8_decode(str.data(), str.data() + str.size());
 }
 
 

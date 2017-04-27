@@ -1,5 +1,5 @@
-#ifndef JSON_CXX_UNICODE_H
-#define JSON_CXX_UNICODE_H
+#ifndef JIAOBENSCRIPT_UNICODE_H
+#define JIAOBENSCRIPT_UNICODE_H
 
 #include <cstdint>
 #include <stdexcept>
@@ -54,4 +54,4 @@ unichar u16_assemble_surrogate(unichar hi, unichar lo);
 #define USTRING u8_decode   // convert a string literal to ustring
 
 
-#endif //JSON_CXX_UNICODE_H
+#endif //JIAOBENSCRIPT_UNICODE_H
