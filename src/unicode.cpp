@@ -116,6 +116,9 @@ static size_t  _u8_unicode_len_bound(const char *start, const char *end) {
     for (; start < end; start += u8_read_char_len(start)) {
         ans++;
     }
+    if (start != end) {
+        throw DecodeError("truncated bytes", static_cast<uint8_t>(*end));
+    }
     return ans;
 }
 
@@ -138,6 +141,9 @@ static ustring _u8_decode(const char *start, const char *end) {
 
     while (start < end) {
         int clen = u8_read_char_len(start);
+        if (start + clen > end) {
+            throw DecodeError("truncated bytes", static_cast<uint8_t>(*end));
+        }
         ans.push_back(u8_read_char(start));
         start += clen;
     }

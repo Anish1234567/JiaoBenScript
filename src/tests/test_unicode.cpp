@@ -76,3 +76,11 @@ TEST_CASE("Test unicode length") {
 TEST_CASE("Test surrogate") {
     CHECK(UCHAR("𤭢") == u16_assemble_surrogate(0xd852, 0xdf62));
 }
+
+
+TEST_CASE("Test DecodeError") {
+    char buf[16] = "\xe5\x95";
+    CHECK_THROWS_AS(u8_decode(buf), DecodeError);
+    CHECK_THROWS_WITH(u8_decode(buf), Contains("truncate"));
+    CHECK_THROWS_AS(u8_decode(std::string(buf)), DecodeError);
+}
