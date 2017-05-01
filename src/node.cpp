@@ -44,7 +44,9 @@ bool S_DeclareList::operator==(const Node &rhs) const {
         if (std::get<0>(this->decls[i]) != std::get<0>(other->decls[i])) {
             return false;
         }
-        if (*std::get<1>(this->decls[i]) != *std::get<1>(other->decls[i])) {
+        const Node::Ptr &lhs_item = std::get<1>(this->decls[i]);
+        const Node::Ptr &rhs_item = std::get<1>(other->decls[i]);
+        if (!((!lhs_item && !rhs_item) || *lhs_item == *rhs_item)) {
             return false;
         }
     }
@@ -94,7 +96,7 @@ bool E_Var::operator==(const Node &rhs) const {
 
 bool E_Func::operator==(const Node &rhs) const {
     _TO_OTHER(E_Func);
-    return _ATTR_EQ(args) && _ATTR_EQ(block);
+    return _ATTR_EQ_OPT(args) && _ATTR_EQ(block);
 }
 
 

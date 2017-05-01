@@ -47,3 +47,6 @@
 /build
 !/build/.git_keep
 /.plscache
+*.gcno
+*.gcda
+*.gcov

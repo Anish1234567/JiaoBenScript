@@ -41,6 +41,7 @@ enum class TokenCode : uint32_t {
     LBRACE          = '{',
     RBRACE          = '}',
     COMMA           = ',',
+    SEMICOLON       = ';',
     ID              = 'ID',
     INT             = 'INT',
     FLOAT           = 'FLT',

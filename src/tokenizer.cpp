@@ -104,7 +104,7 @@ void Tokenizer::st_init(unichar ch) {
     this->start_pos = this->cur_pos;
     if (is_space(ch)) {
         // pass
-    } else if (USTRING("[]{}(),").find(ch) != ustring::npos) {
+    } else if (USTRING("[]{}(),;").find(ch) != ustring::npos) {
         Token *tok = new Token(static_cast<TokenCode>(ch));
         tok->pos_start = this->cur_pos;
         tok->pos_end = this->cur_pos;

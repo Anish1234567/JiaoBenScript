@@ -9,7 +9,7 @@ static std::string _make_indent(uint32_t indent) {
 
 std::string S_Block::repr(uint32_t indent) const {
     std::string ans;
-    ans += _make_indent(indent) + "{";
+    ans += _make_indent(indent) + "{\n";
     for (const Node::Ptr &child : this->stmts) {
         ans += child->repr(indent + 1) + "\n";
     }
@@ -18,10 +18,12 @@ std::string S_Block::repr(uint32_t indent) const {
 }
 
 
+// FIXME: function args
 std::string S_DeclareList::repr(uint32_t indent) const {
     std::string ans;
     ans += _make_indent(indent) + "let ";
 
+    int count = 0;
     std::string comma = "";
     for (const auto &pair : this->decls) {
         ans += comma;
@@ -30,6 +32,7 @@ std::string S_DeclareList::repr(uint32_t indent) const {
         if (std::get<1>(pair)) {
             ans += " = " + std::get<1>(pair)->repr(indent + 1);
         }
+        count++;
     }
     ans += ";";
     return ans;
@@ -108,36 +111,40 @@ std::string E_Op::repr(uint32_t indent) const {
         case '=': case '+=': case '-=': case '*=': case '/=': case '%=':
             if (this->args.size() == 1) {
                 assert(opint == '+' || opint == '-');
-                return string_fmt("(%s%s)", opstr, this->args[0]->repr(indent + 1));
+                return string_fmt(
+                    "(%s%s)",
+                    opstr.data(),
+                    this->args[0]->repr(indent + 1).data()
+                );
             } else {
                 assert(this->args.size() == 2);
                 return string_fmt(
                     "(%s %s %s)",
-                    this->args[0]->repr(indent + 1), opstr, this->args[1]->repr(indent + 1)
+                    this->args[0]->repr(indent + 1).data(),
+                    opstr.data(),
+                    this->args[1]->repr(indent + 1).data()
                 );
             }
         case '!':
             assert(this->args.size() == 1);
-            return string_fmt("!(%s)", this->args[0]->repr(indent + 1));
+            return string_fmt("!(%s)", this->args[0]->repr(indent + 1).data());
         case '()':  // call
-            assert(this->args.size() == 2);
-            return string_fmt(
-                "%s(%s)",
-                this->args[0]->repr(indent + 1), this->args[1]->repr(indent + 1)
-            );
+            if (this->args.size() == 1) {
+                return this->args[0]->repr(indent + 1) + "()";
+            } else {
+                assert(this->args.size() == 2);
+                return string_fmt(
+                    "%s(%s)",
+                    this->args[0]->repr(indent + 1).data(),
+                    this->args[1]->repr(indent + 1).data()
+                );
+            }
         case '[]':
             assert(this->args.size() == 2);
             return string_fmt(
                 "%s[%s]",
-                this->args[0]->repr(indent + 1), this->args[1]->repr(indent + 1)
-            );
-        case '[]=':
-            assert(this->args.size() == 3);
-            return string_fmt(
-                "%s[%s] = %s",
-                this->args[0]->repr(indent + 1),
-                this->args[1]->repr(indent + 1),
-                this->args[2]->repr(indent + 1)
+                this->args[0]->repr(indent + 1).data(),
+                this->args[1]->repr(indent + 1).data()
             );
         case ',': {
             std::string ans;
@@ -147,6 +154,7 @@ std::string E_Op::repr(uint32_t indent) const {
                 comma = ", ";
                 ans += child->repr(indent + 1);
             }
+            return ans;
         }
         default:
             assert(!"Unreachable");
@@ -154,31 +162,17 @@ std::string E_Op::repr(uint32_t indent) const {
 }
 
 
-std::string E_Var::repr(uint32_t indent) const {
+std::string E_Var::repr(uint32_t) const {
     return u8_encode(this->name);
 }
 
 
 std::string E_Func::repr(uint32_t indent) const {
-    return string_fmt("function(%s)\n", this->args->repr()) + this->block->repr(indent);
-}
-
-
-template<class T>
-std::string _my_to_string(const T &value) {
-    return std::to_string(value);
-}
-
-
-template<>
-std::string _my_to_string<ustring>(const ustring &value) {
-    return u8_encode(value);
-}
-
-
-template<class ValueType>
-std::string _E_Value<ValueType>::repr(uint32_t indent) const {
-    return _my_to_string(this->value);
+    return string_fmt(
+        "function(%s)\n%s",
+        this->args ? this->args->repr().data() : "",
+        this->block->repr(indent).data()
+    );
 }
 
 
@@ -195,6 +189,6 @@ std::string E_List::repr(uint32_t indent) const {
 }
 
 
-std::string E_Null::repr(uint32_t indent) const {
+std::string E_Null::repr(uint32_t) const {
     return "null";
 }

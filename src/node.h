@@ -19,7 +19,7 @@ struct Node {
     virtual ~Node() {}
     virtual bool operator==(const Node &rhs) const;
     bool operator!=(const Node &rhs) const;
-    virtual std::string repr(uint32_t indent = 0) const {
+    virtual std::string repr(uint32_t = 0) const {
         return "<Node>";
     }
 
@@ -39,6 +39,9 @@ struct S_Block : Node {
     virtual bool operator==(const Node &rhs) const override;
     virtual std::string repr(uint32_t indent = 0) const;
 };
+
+
+struct Program : S_Block {};
 
 
 struct S_DeclareList : Node {
@@ -128,12 +131,13 @@ enum class OpCode : uint32_t {
 
     CALL            = '()',
     SUBSCRIPT       = '[]',
-    SETITEM         = '[]=',
     EXPLIST         = ',',
 };
 
 
 struct E_Op : Node {
+    E_Op(OpCode op_code) : op_code(op_code) {}
+
     OpCode op_code;
     std::vector<Node::Ptr> args;
 
@@ -143,6 +147,8 @@ struct E_Op : Node {
 
 
 struct E_Var : Node {
+    E_Var(const ustring &name) : name(name) {}
+
     ustring name;
 
     virtual bool operator==(const Node &rhs) const override;
@@ -151,7 +157,7 @@ struct E_Var : Node {
 
 
 struct E_Func : Node {
-    Node::Ptr args;     // S_DeclareList
+    Node::Ptr args;     // S_DeclareList, optional
     Node::Ptr block;
 
     virtual bool operator==(const Node &rhs) const override;
@@ -161,14 +167,41 @@ struct E_Func : Node {
 
 template<class ValueType>
 struct _E_Value : Node {
+    typedef _E_Value<ValueType> _SelfType;
+    _E_Value<ValueType>(const ValueType &value) : value(value) {}
+
     ValueType value;
 
     virtual bool operator==(const Node &rhs) const override {
-        const _E_Value<ValueType> *other = dynamic_cast<_E_Value<ValueType> *>(&rhs);
+        const _SelfType *other = dynamic_cast<const _SelfType *>(&rhs);
         return other != nullptr && this->value == other->value;
     }
     virtual std::string repr(uint32_t indent = 0) const;
 };
+
+
+template<class T>
+inline std::string _my_to_string(const T &value) {
+    return std::to_string(value);
+}
+
+
+template<>
+inline std::string _my_to_string<ustring>(const ustring &value) {
+    return u8_encode(value);
+}
+
+
+template<>
+inline std::string _my_to_string<bool>(const bool &value) {
+    return value ? "true" : "false";
+}
+
+
+template<class ValueType>
+inline std::string _E_Value<ValueType>::repr(uint32_t) const {
+    return _my_to_string(this->value);
+}
 
 
 typedef _E_Value<bool> E_Bool;
