@@ -20,13 +20,18 @@ std::vector<Token::Ptr> get_tokens(const std::string &input) {
 }
 
 
-Node::Ptr parse_string(const std::string &input) {
+Node::Ptr parse_string(const std::string &input, bool repl) {
     auto tokens = get_tokens(input);
     Parser parser;
-    parser.start_program();
+    if (repl) {
+        parser.start_repl();
+    } else {
+        parser.start_program();
+    }
+
     for (const Token::Ptr &tok : tokens) {
         parser.feed(*tok);
     }
-    parser.feed(Token(TokenCode::END));
+    REQUIRE(parser.can_end());
     return parser.pop_result();
 }

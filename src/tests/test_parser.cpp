@@ -7,15 +7,6 @@
 #include "helper.h"
 
 
-std::vector<Node::Ptr> nodes_guard(const std::vector<Node *> nodes) {
-    std::vector<Node::Ptr> ans;
-    for (auto node : nodes) {
-        ans.emplace_back(node);
-    }
-    return ans;
-}
-
-
 Node *make_ops(OpCode opcode, const std::vector<Node *> &args) {
     E_Op *exp = new E_Op(opcode);
     for (Node *item : args) {
@@ -99,31 +90,24 @@ S_While *make_while(Node *test, Node *block) {
 }
 
 
-Node *parse_single_stmt(const std::string &input) {
+Node::Ptr parse_single_stmt(const std::string &input) {
     Node::Ptr node = parse_string(input);
     Program *prog = dynamic_cast<Program *>(node.get());
     REQUIRE(prog != nullptr);
     REQUIRE(prog->stmts.size() == 1);
-    return prog->stmts[0].release();
+    return std::move(prog->stmts[0]);
 }
 
 
 void check_exp(const std::string &input, Node *exp) {
-    auto _g = nodes_guard({exp});
-    Node *node = parse_single_stmt(input + ";");
-    _g.emplace_back(node);
-
-    const S_Exp *stmt = dynamic_cast<const S_Exp *>(node);
-    REQUIRE(stmt != nullptr);
-    CHECK(*stmt->value == *exp);
+    auto _g = Node::Ptr(exp);
+    CHECK(*parse_string(input) == *exp);
 }
 
 
 void check_stmt(const std::string &input, Node *expected) {
-    auto _g = nodes_guard({expected});
-    Node *node = parse_single_stmt(input);
-    _g.emplace_back(node);
-    CHECK(*node == *expected);
+    auto _g = Node::Ptr(expected);
+    CHECK(*parse_single_stmt(input) == *expected);
 }
 
 

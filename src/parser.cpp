@@ -10,6 +10,65 @@ void Parser::start_program() {
 }
 
 
+void Parser::start_repl() {
+    this->enter_program_or_exp();
+}
+
+
+bool Parser::can_end() const {
+    assert(!this->states.empty());
+    assert(
+        this->states.front() == ParserState::PROGRAM_OR_EXP
+        || this->states.front() == ParserState::PROGRAM
+    );
+
+    auto stop = --this->states.rend();
+    for (auto it = this->states.rbegin(); it != stop; ++it) {
+        if (std::find(Parser::end_set.begin(), Parser::end_set.end(), *it)
+            == Parser::end_set.end())
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+
+const std::vector<ParserState> Parser::end_set {
+    // can terminate a statement
+    ParserState::COND_ELSE,
+    ParserState::COND_END,
+    ParserState::WHILE_END,
+
+    // can transit to expression mode and terminate
+    ParserState::STMT_EXP,
+
+    // can terminate an expression
+    ParserState::EXP_LIST,
+    ParserState::EXP_LIST_ABS,
+    ParserState::EXP_ASSIGN,
+    ParserState::EXP_ASSIGN_END,
+
+    ParserState::EXP_OR,
+    ParserState::EXP_OR_END,
+    ParserState::EXP_AND,
+    ParserState::EXP_AND_END,
+    ParserState::EXP_EQ,
+    ParserState::EXP_EQ_END,
+    ParserState::EXP_CMP,
+    ParserState::EXP_CMP_END,
+    ParserState::EXP_A,
+    ParserState::EXP_A_END,
+    ParserState::EXP_X,
+    ParserState::EXP_X_END,
+
+    ParserState::EXP_X_HEAD_END,
+    ParserState::EXP_NOT_END,
+    ParserState::EXP_CALL_OR_SUBS,
+    ParserState::FUNC_END,
+};
+
+
 void Parser::leave() {
     this->states.pop_back();
 }
@@ -27,11 +86,14 @@ void Parser::shift(ParserState state) {
 
 
 Node::Ptr Parser::pop_result() {
-//    assert(this->can_finish());
+    assert(this->can_end());
+    this->feed(Token(TokenCode::END));
     assert(this->nodes.size() == 1);
     assert(this->states.size() == 1);
+
     Node::Ptr ret = std::move(this->nodes.back());
     this->nodes.pop_back();
+    this->states.pop_back();
     return ret;
 }
 
@@ -55,7 +117,7 @@ void Parser::feed(const Token &tok) {
     // TODO: set lineno
     // TODO: replace ParserState with member function pointer
     if (this->states.empty()) {
-        return this->unpected_token(tok);
+        return this->unpected_token(tok, "parser not started");
     }
     if (tok.tokencode == TokenCode::COMMENT) {
         return;
@@ -64,7 +126,7 @@ void Parser::feed(const Token &tok) {
     ParserState cur = this->states.back();
     if (cur == ParserState::END) {
         this->unpected_token(tok, "parser ended");
-    } else if (cur == ParserState::PROGRAM) {
+    } else if (cur == ParserState::PROGRAM || cur == ParserState::PROGRAM_OR_EXP) {
         Program *p = this->get_top2<Program>();
         p->stmts.emplace_back(this->pop_top());
         if (tok.tokencode == TokenCode::END) {
@@ -113,6 +175,19 @@ void Parser::feed(const Token &tok) {
             stmt->value.reset(this->pop_top());
             this->nodes.emplace_back(stmt);
             this->leave();
+        } else if (this->states.front() == ParserState::PROGRAM_OR_EXP) {
+            if (tok.tokencode == TokenCode::END) {
+                assert(this->nodes.size() == 2);
+                // replace Program with expression
+                this->nodes.front().reset(this->nodes.back().release());
+                this->nodes.pop_back();
+
+                assert(this->states.size() == 2);
+                this->leave();
+                this->shift(ParserState::END);
+            } else {
+                this->unpected_token(tok, "expect semicolon or END");
+            }
         } else {
             this->unpected_token(tok, "expect semicolon");
         }
@@ -400,7 +475,7 @@ void Parser::feed(const Token &tok) {
             // FIXME: check reserved word
             this->do_const<TokenId, E_Var>(tok);
         } else {
-            this->pass_up(tok);
+            this->unpected_token(tok, "expect terminal");
         }
     } else if (cur == ParserState::EXP_T_RPAR) {
         if (tok.tokencode == TokenCode::RPAR) {
@@ -506,6 +581,13 @@ void Parser::do_exp_op_end(
     } else {
         this->pass_up(tok);
     }
+}
+
+
+void Parser::enter_program_or_exp() {
+    this->nodes.emplace_back(new Program());
+    this->states.push_back(ParserState::PROGRAM_OR_EXP);
+    this->enter_stmt();
 }
 
 

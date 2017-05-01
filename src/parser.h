@@ -10,6 +10,7 @@
 
 enum class ParserState {
     END,
+    PROGRAM_OR_EXP,
     PROGRAM,
     STMT,
     STMT_EXP,
@@ -71,6 +72,8 @@ enum class ParserState {
 class Parser {
 public:
     void start_program();
+    void start_repl();
+    bool can_end() const;
     void feed(const Token &tok);
     Node::Ptr pop_result();
 
@@ -79,6 +82,7 @@ private:
     std::vector<Node::Ptr> nodes;
 
 private:
+    void enter_program_or_exp();
     void enter_program();
     void enter_stmt();
     void enter_block();
@@ -153,6 +157,7 @@ private:
     }
 
     static bool match_id(const Token &tok, const ustring &id);
+    static const std::vector<ParserState> end_set;
 };
 
 
