@@ -157,7 +157,6 @@ private:
     }
 
     static bool match_id(const Token &tok, const ustring &id);
-    static const std::vector<ParserState> end_set;
 };
 
 

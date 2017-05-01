@@ -24,49 +24,45 @@ bool Parser::can_end() const {
 
     auto stop = --this->states.rend();
     for (auto it = this->states.rbegin(); it != stop; ++it) {
-        if (std::find(Parser::end_set.begin(), Parser::end_set.end(), *it)
-            == Parser::end_set.end())
-        {
+        switch (*it) {
+        // can terminate a statement
+        case ParserState::COND_ELSE:
+        case ParserState::COND_END:
+        case ParserState::WHILE_END:
+
+        // can transit to expression mode and terminate
+        case ParserState::STMT_EXP:
+
+        // can terminate an expression
+        case ParserState::EXP_LIST:
+        case ParserState::EXP_LIST_ABS:
+        case ParserState::EXP_ASSIGN:
+        case ParserState::EXP_ASSIGN_END:
+
+        case ParserState::EXP_OR:
+        case ParserState::EXP_OR_END:
+        case ParserState::EXP_AND:
+        case ParserState::EXP_AND_END:
+        case ParserState::EXP_EQ:
+        case ParserState::EXP_EQ_END:
+        case ParserState::EXP_CMP:
+        case ParserState::EXP_CMP_END:
+        case ParserState::EXP_A:
+        case ParserState::EXP_A_END:
+        case ParserState::EXP_X:
+        case ParserState::EXP_X_END:
+
+        case ParserState::EXP_X_HEAD_END:
+        case ParserState::EXP_NOT_END:
+        case ParserState::EXP_CALL_OR_SUBS:
+        case ParserState::FUNC_END:
+            continue;
+        default:
             return false;
         }
     }
     return true;
 }
-
-
-const std::vector<ParserState> Parser::end_set {
-    // can terminate a statement
-    ParserState::COND_ELSE,
-    ParserState::COND_END,
-    ParserState::WHILE_END,
-
-    // can transit to expression mode and terminate
-    ParserState::STMT_EXP,
-
-    // can terminate an expression
-    ParserState::EXP_LIST,
-    ParserState::EXP_LIST_ABS,
-    ParserState::EXP_ASSIGN,
-    ParserState::EXP_ASSIGN_END,
-
-    ParserState::EXP_OR,
-    ParserState::EXP_OR_END,
-    ParserState::EXP_AND,
-    ParserState::EXP_AND_END,
-    ParserState::EXP_EQ,
-    ParserState::EXP_EQ_END,
-    ParserState::EXP_CMP,
-    ParserState::EXP_CMP_END,
-    ParserState::EXP_A,
-    ParserState::EXP_A_END,
-    ParserState::EXP_X,
-    ParserState::EXP_X_END,
-
-    ParserState::EXP_X_HEAD_END,
-    ParserState::EXP_NOT_END,
-    ParserState::EXP_CALL_OR_SUBS,
-    ParserState::FUNC_END,
-};
 
 
 void Parser::leave() {
