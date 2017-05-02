@@ -18,12 +18,12 @@ bool SourcePos::is_valid() const {
 }
 
 
-void SourcePos::add_char(unsigned int ch) {
+void LineTracer::add_char(unsigned int ch) {
     if (this->last_newline) {
-        this->lineno++;
-        this->rowno = 0;
+        this->pos.lineno++;
+        this->pos.rowno = 0;
     } else {
-        this->rowno++;
+        this->pos.rowno++;
     }
 
     this->last_newline = (ch == '\n');

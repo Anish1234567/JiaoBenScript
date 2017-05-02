@@ -213,6 +213,8 @@ struct BlockCommentState {
 
 class Tokenizer {
 public:
+    Tokenizer() : linetracer(cur_pos) {}
+
     void feed(unichar ch);
     Token::Ptr pop();
     bool is_ready() const;
@@ -235,6 +237,7 @@ private:
     SourcePos start_pos;
     SourcePos prev_pos;
     SourcePos cur_pos;
+    LineTracer linetracer;
 
     OpState op_state {};
     StringState string_state {};

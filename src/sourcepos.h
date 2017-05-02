@@ -1,5 +1,5 @@
-#ifndef CALCXX_SOURCEPOS_H
-#define CALCXX_SOURCEPOS_H
+#ifndef JIAOBENSCRIPT_SOURCEPOS_H
+#define JIAOBENSCRIPT_SOURCEPOS_H
 
 
 #include <string>
@@ -11,10 +11,6 @@ struct SourcePos {
     int lineno;
     int rowno;
 
-private:
-    bool last_newline = true;
-
-public:
     SourcePos(int lineno, int rowno)
         : lineno(lineno), rowno(rowno)
     {}
@@ -25,7 +21,18 @@ public:
     bool operator==(const SourcePos &other) const;
     bool operator!=(const SourcePos &other) const;
     bool is_valid() const;
+};
+
+
+class LineTracer {
+public:
+    LineTracer(SourcePos &pos) : pos(pos) {}
+
     void add_char(unsigned int ch);
+
+private:
+    SourcePos &pos;
+    bool last_newline = true;
 };
 
 
@@ -34,4 +41,4 @@ REPR(SourcePos) {
 }
 
 
-#endif //CALCXX_SOURCEPOS_H
+#endif //JIAOBENSCRIPT_SOURCEPOS_H

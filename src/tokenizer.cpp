@@ -58,7 +58,7 @@ std::string Token::repr_value() const {
 void Tokenizer::feed(unichar ch) {
     // TODO: limit stack depth
     this->prev_pos = this->cur_pos;
-    this->cur_pos.add_char(ch);
+    this->linetracer.add_char(ch);
     this->refeed(ch);
 }
 
