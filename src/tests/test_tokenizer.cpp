@@ -2,12 +2,28 @@
 #include "catch.hpp"
 
 #include "../tokenizer.h"
-#include "helper.h"
 
 
 TEST_CASE("Test tokencode_to_string") {
     CHECK(tokencode_to_string(TokenCode::STRING) == "STR");
     CHECK(tokencode_to_string(TokenCode::GREATEQ) == ">=");
+}
+
+
+std::vector<Token::Ptr> get_tokens(const std::string &input) {
+    Tokenizer tokenizer;
+    for (auto ch : u8_decode(input)) {
+        tokenizer.feed(ch);
+    }
+    tokenizer.feed('\n');
+    REQUIRE(tokenizer.is_ready());
+
+    std::vector<Token::Ptr> tokens;
+    Token::Ptr tok;
+    while ((tok = tokenizer.pop())) {
+        tokens.emplace_back(std::move(tok));
+    }
+    return tokens;
 }
 
 
