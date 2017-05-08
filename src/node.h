@@ -4,7 +4,6 @@
 #include <cassert>
 #include <cstdint>
 #include <memory>
-#include <tuple>
 #include <vector>
 
 #include "sourcepos.h"
@@ -45,7 +44,14 @@ struct Program : S_Block {};
 
 
 struct S_DeclareList : Node {
-    typedef std::tuple<ustring, Node::Ptr> PairType;
+    struct PairType {
+        PairType(const ustring name, Node::Ptr initial)
+            : name(name), initial(std::move(initial))
+        {}
+
+        ustring name;
+        Node::Ptr initial;
+    };
     std::vector<PairType> decls;
 
     virtual bool operator==(const Node &rhs) const override;

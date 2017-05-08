@@ -48,10 +48,7 @@ Node *make_list(const std::vector<Node *> &args) {
 S_DeclareList *make_decl_list(const std::vector<std::pair<std::string, Node *>> &pairs) {
     S_DeclareList *decls = new S_DeclareList();
     for (const auto &p : pairs) {
-        decls->decls.emplace_back(S_DeclareList::PairType {
-            u8_decode(p.first),
-            Node::Ptr(p.second)
-        });
+        decls->decls.emplace_back(u8_decode(p.first), Node::Ptr(p.second));
     }
     return decls;
 }

@@ -41,12 +41,15 @@ bool S_DeclareList::operator==(const Node &rhs) const {
         return false;
     }
     for (size_t i = 0; i < this->decls.size(); ++i) {
-        if (std::get<0>(this->decls[i]) != std::get<0>(other->decls[i])) {
+        if (this->decls[i].name != other->decls[i].name) {
             return false;
         }
-        const Node::Ptr &lhs_item = std::get<1>(this->decls[i]);
-        const Node::Ptr &rhs_item = std::get<1>(other->decls[i]);
-        if (!((!lhs_item && !rhs_item) || *lhs_item == *rhs_item)) {
+        const Node::Ptr &lhs_item = this->decls[i].initial;
+        const Node::Ptr &rhs_item = other->decls[i].initial;
+        if (!(
+            (!lhs_item && !rhs_item)    // l == r == nullptr
+            || *lhs_item == *rhs_item)) // l == r
+        {
             return false;
         }
     }

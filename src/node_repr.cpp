@@ -28,9 +28,9 @@ std::string S_DeclareList::repr(uint32_t indent) const {
     for (const auto &pair : this->decls) {
         ans += comma;
         comma = ", ";
-        ans += u8_encode(std::get<0>(pair));
-        if (std::get<1>(pair)) {
-            ans += " = " + std::get<1>(pair)->repr(indent + 1);
+        ans += u8_encode(pair.name);
+        if (pair.initial) {
+            ans += " = " + pair.initial->repr(indent + 1);
         }
         count++;
     }

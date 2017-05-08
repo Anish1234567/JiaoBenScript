@@ -299,7 +299,7 @@ void Parser::feed(const Token &tok) {
         }
     } else if (cur == ParserState::VAR_DECL_ITEM_INIT) {
         S_DeclareList *decls = this->get_top2<S_DeclareList>();
-        std::get<1>(decls->decls.back()).reset(this->pop_top());
+        decls->decls.back().initial.reset(this->pop_top());
         this->pass_up(tok);
     } else if (cur == ParserState::WHILE_LPAR) {
         if (tok.tokencode == TokenCode::LPAR) {
@@ -517,6 +517,7 @@ void Parser::feed(const Token &tok) {
         }
     } else if (cur == ParserState::FUNC_RPAR) {
         if (tok.tokencode == TokenCode::RPAR) {
+            // FIXME: check the position of default values
             E_Func *func = this->get_top2<E_Func>();
             func->args.reset(this->pop_top());
             this->shift(ParserState::FUNC_END);
