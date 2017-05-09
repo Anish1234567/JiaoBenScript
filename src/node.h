@@ -3,6 +3,7 @@
 
 #include <cassert>
 #include <cstdint>
+#include <map>
 #include <memory>
 #include <vector>
 
@@ -33,7 +34,38 @@ REPR(Node) {
 
 
 struct S_Block : Node {
+    struct AttrType {
+        struct VarInfo {
+            VarInfo(const ustring &name) : name(name) {}
+            ustring name;
+
+            bool operator==(const VarInfo &rhs) const {
+                return this->name == rhs.name;
+            }
+        };
+
+        struct NonLocalInfo {
+            NonLocalInfo(S_Block *parent, int index) : parent(parent), index(index) {}
+
+            S_Block *parent = nullptr;
+            int index = -1;
+
+            bool operator==(const NonLocalInfo &rhs) const {
+                return this->parent == rhs.parent && this->index == rhs.index;
+            }
+        };
+
+        S_Block *parent = nullptr;
+        std::vector<VarInfo> local_info;
+        std::vector<NonLocalInfo> nonlocal_indexes;
+
+        // tmp
+        std::map<ustring, int> name_to_local_index;
+        std::map<ustring, int> name_to_nonlocal_index;
+    };
+
     std::vector<Node::Ptr> stmts;
+    AttrType attr {};
 
     virtual bool operator==(const Node &rhs) const override;
     virtual std::string repr(uint32_t indent = 0) const;
@@ -153,9 +185,15 @@ struct E_Op : Node {
 
 
 struct E_Var : Node {
+    struct AttrType {
+        bool is_local;
+        int index = -1;
+    };
+
     E_Var(const ustring &name) : name(name) {}
 
     ustring name;
+    AttrType attr {};
 
     virtual bool operator==(const Node &rhs) const override;
     virtual std::string repr(uint32_t indent = 0) const;

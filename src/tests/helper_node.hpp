@@ -28,8 +28,15 @@ Node *T(int value) {
 }
 
 
-Node *V(const std::string &name) {
+E_Var *V(const std::string &name) {
     return new E_Var(u8_decode(name));
+}
+
+
+S_Exp *make_s_exp(Node *exp) {
+    S_Exp *stmt = new S_Exp();
+    stmt->value.reset(exp);
+    return stmt;
 }
 
 
@@ -49,6 +56,7 @@ S_DeclareList *make_decl_list(const std::vector<std::pair<std::string, Node *>> 
     }
     return decls;
 }
+
 
 S_Block *make_block(const std::vector<Node *> stmts) {
     S_Block *block = new S_Block();
@@ -81,6 +89,13 @@ S_While *make_while(Node *test, Node *block) {
     wh->condition.reset(test);
     wh->block.reset(block);
     return wh;
+}
+
+
+S_Return *make_return(Node *value) {
+    S_Return *ret = new S_Return();
+    ret->value.reset(value);
+    return ret;
 }
 
 

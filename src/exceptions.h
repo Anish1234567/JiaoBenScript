@@ -35,4 +35,10 @@ public:
 };
 
 
+class CompileError : public BaseException {
+public:
+    using BaseException::BaseException;
+};
+
+
 #endif //JSON_CXX_EXCEPTIONS_H
