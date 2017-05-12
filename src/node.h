@@ -75,6 +75,11 @@ struct S_Block : Node {
 struct Program : S_Block {};
 
 
+struct A_DeclareList {
+    int start_index = -1;
+};
+
+
 struct S_DeclareList : Node {
     struct PairType {
         PairType(const ustring name, Node::Ptr initial)
@@ -85,6 +90,7 @@ struct S_DeclareList : Node {
         Node::Ptr initial;
     };
     std::vector<PairType> decls;
+    mutable A_DeclareList attr;
 
     virtual bool operator==(const Node &rhs) const override;
     virtual std::string repr(uint32_t indent = 0) const;

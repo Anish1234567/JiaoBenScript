@@ -168,11 +168,9 @@ TEST_CASE("Test binary op combinations") {
                 T(1)),
             T(2)));
     check_exp("a(1)(2)",
-        make_binop('()',
-            make_binop('()',
-                V("a"),
-                make_ops(',', {T(1)})),
-            make_ops(',', {T(2)})));
+        make_call(
+            make_call(V("a"), {T(1)}),
+            {T(2)}));
     check_exp("a[1](2)[3]",
         make_binop('[]',
             make_binop('()',

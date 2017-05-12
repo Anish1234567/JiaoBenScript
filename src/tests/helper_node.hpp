@@ -4,7 +4,7 @@
 #include "../node.h"
 
 
-Node *make_ops(OpCode opcode, const std::vector<Node *> &args) {
+E_Op *make_ops(OpCode opcode, const std::vector<Node *> &args) {
     E_Op *exp = new E_Op(opcode);
     for (Node *item : args) {
         exp->args.emplace_back(item);
@@ -13,17 +13,22 @@ Node *make_ops(OpCode opcode, const std::vector<Node *> &args) {
 }
 
 
-Node *make_ops(uint32_t opcode, const std::vector<Node *> &args) {
+E_Op *make_ops(uint32_t opcode, const std::vector<Node *> &args) {
     return make_ops(static_cast<OpCode>(opcode), args);
 }
 
 
-Node *make_binop(uint32_t opcode, Node *lhs, Node *rhs) {
+E_Op *make_binop(uint32_t opcode, Node *lhs, Node *rhs) {
     return make_ops(opcode, {lhs, rhs});
 }
 
 
-Node *T(int value) {
+E_Op *make_call(Node *func, const std::vector<Node *> &args) {
+    return make_binop('()', func, make_ops(',', args));
+}
+
+
+E_Int *T(int value) {
     return new E_Int(value);
 }
 
@@ -40,7 +45,7 @@ S_Exp *make_s_exp(Node *exp) {
 }
 
 
-Node *make_list(const std::vector<Node *> &args) {
+E_List *make_list(const std::vector<Node *> &args) {
     E_List *list = new E_List();
     for (Node *item : args) {
         list->value.emplace_back(item);

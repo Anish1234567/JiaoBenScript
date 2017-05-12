@@ -41,6 +41,25 @@ TEST_CASE("Test name resolve basic") {
 }
 
 
+TEST_CASE("Test name resolve S_DelcareList attribute") {
+    S_DeclareList *d1 = make_decl_list({
+        {"a", nullptr},
+    });
+    S_DeclareList *d2 = make_decl_list({
+        {"b", nullptr},
+    });
+    S_Block *block = make_block({
+        d1, d2,
+    });
+    Node::Ptr g(block);
+
+    resolve_names(*block);
+    CHECK(block->attr.local_info == make_local_info({"a", "b"}));
+    CHECK(d1->attr.start_index == 0);
+    CHECK(d2->attr.start_index == 1);
+}
+
+
 TEST_CASE("Test name resolve nested") {
     E_Var *va = V("a");
     E_Var *vb = V("b");

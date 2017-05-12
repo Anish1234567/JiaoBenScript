@@ -1,5 +1,5 @@
-#ifndef JSON_CXX_EXCEPTIONS_H
-#define JSON_CXX_EXCEPTIONS_H
+#ifndef JIAOBENSCRIPT_EXCEPTIONS_H
+#define JIAOBENSCRIPT_EXCEPTIONS_H
 
 
 #include <memory>
@@ -41,4 +41,10 @@ public:
 };
 
 
-#endif //JSON_CXX_EXCEPTIONS_H
+class JBError : public BaseException {
+public:
+    using BaseException::BaseException;
+};
+
+
+#endif //JIAOBENSCRIPT_EXCEPTIONS_H

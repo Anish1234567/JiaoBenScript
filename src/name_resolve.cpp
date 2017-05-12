@@ -81,6 +81,7 @@ static void iter_vars(Node &stmt, std::function<void (E_Var &)> callback) {
 
 
 static void add_declarations_to_block_attr(S_Block::AttrType &attr, const S_DeclareList &decls) {
+    decls.attr.start_index = static_cast<int>(attr.local_info.size());
     for (const auto &pair : decls.decls) {
         auto it = attr.name_to_local_index.find(pair.name);
         if (it != attr.name_to_local_index.end()) {
@@ -119,51 +120,63 @@ static int add_nonlocal_to_block_attr(S_Block::AttrType &attr, const ustring &na
 }
 
 
+static void resolve_names_in_block_no_decl(S_Block &block, Node &node) {
+    // TODO: for stmt
+    iter_blocks(node, [&](S_Block &child_block) {
+        child_block.attr.parent = &block;
+        resolve_names(child_block);
+    });
+
+    iter_vars(node, [&](E_Var &var) {
+        auto it = block.attr.name_to_local_index.find(var.name);
+        if (it != block.attr.name_to_local_index.end()) {
+            var.attr.is_local = true;
+            var.attr.index = it->second;
+        } else {
+            var.attr.is_local = false;
+            var.attr.index = add_nonlocal_to_block_attr(
+                block.attr, var.name, block.attr.parent
+            );
+        }
+    });
+
+    iter_funcs(node, [&](E_Func &func) {
+        S_Block &func_block = static_cast<S_Block &>(*func.block);
+        if (func.args) {
+            iter_vars(*func.args, [&](E_Var &var) {
+                var.attr.is_local = false;
+                var.attr.index = add_nonlocal_to_block_attr(
+                    func_block.attr, var.name, &block
+                );
+            });
+
+            add_declarations_to_block_attr(
+                func_block.attr, static_cast<S_DeclareList &>(*func.args)
+            );
+        }
+
+        func_block.attr.parent = &block;
+        resolve_names(func_block);
+    });
+}
+
+
+void resolve_names_in_block(S_Block &block, Node &node) {
+    if (S_DeclareList *decls = dynamic_cast<S_DeclareList *>(&node)) {
+        add_declarations_to_block_attr(block.attr, *decls);
+    }
+    resolve_names_in_block_no_decl(block, node);
+}
+
+
 void resolve_names(S_Block &block) {
     for (Node::Ptr &stmt : block.stmts) {
-        S_DeclareList *decls = dynamic_cast<S_DeclareList *>(stmt.get());
-        if (decls != nullptr) {
+        if (S_DeclareList *decls = dynamic_cast<S_DeclareList *>(stmt.get())) {
             add_declarations_to_block_attr(block.attr, *decls);
         }
     }
 
-    for (Node::Ptr &stmt : block.stmts) {
-        // TODO: for stmt
-        iter_blocks(*stmt, [&](S_Block &child_block) {
-            child_block.attr.parent = &block;
-            resolve_names(child_block);
-        });
-
-        iter_vars(*stmt, [&](E_Var &var) {
-            auto it = block.attr.name_to_local_index.find(var.name);
-            if (it != block.attr.name_to_local_index.end()) {
-                var.attr.is_local = true;
-                var.attr.index = it->second;
-            } else {
-                var.attr.is_local = false;
-                var.attr.index = add_nonlocal_to_block_attr(
-                    block.attr, var.name, block.attr.parent
-                );
-            }
-        });
-
-        iter_funcs(*stmt, [&](E_Func &func) {
-            S_Block &func_block = static_cast<S_Block &>(*func.block);
-            if (func.args) {
-                iter_vars(*func.args, [&](E_Var &var) {
-                    var.attr.is_local = false;
-                    var.attr.index = add_nonlocal_to_block_attr(
-                        func_block.attr, var.name, &block
-                    );
-                });
-
-                add_declarations_to_block_attr(
-                    func_block.attr, static_cast<S_DeclareList &>(*func.args)
-                );
-            }
-
-            func_block.attr.parent = &block;
-            resolve_names(func_block);
-        });
+    for (Node::Ptr &node : block.stmts) {
+        resolve_names_in_block_no_decl(block, *node);
     }
 }
