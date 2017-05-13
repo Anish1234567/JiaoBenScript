@@ -13,6 +13,59 @@
 #include "utils.hpp"
 
 
+// forward declarations
+class S_Block;
+class Program;
+class S_DeclareList;
+class S_Condition;
+class S_While;
+class S_Return;
+class S_Break;
+class S_Continue;
+class S_Exp;
+class S_Empty;
+class E_Op;
+class E_Var;
+class E_Func;
+
+template<class ValueType>
+class _E_Value;
+
+typedef _E_Value<bool> E_Bool;
+typedef _E_Value<int64_t> E_Int;
+typedef _E_Value<double> E_Float;
+typedef _E_Value<ustring> E_String;
+
+class E_List;
+class E_Null;
+
+
+class NodeVistor {
+public:
+    virtual ~NodeVistor() {}
+
+    virtual void visit_block(S_Block &) {}
+    virtual void visit_program(Program &) {}
+    virtual void visit_declare_list(S_DeclareList &) {}
+    virtual void visit_condition(S_Condition &) {}
+    virtual void visit_while(S_While &) {}
+    virtual void visit_return(S_Return &) {}
+    virtual void visit_break(S_Break &) {}
+    virtual void visit_continue(S_Continue &) {}
+    virtual void visit_stmt_exp(S_Exp &) {}
+    virtual void visit_stmt_empty(S_Empty &) {}
+    virtual void visit_op(E_Op &) {}
+    virtual void visit_var(E_Var &) {}
+    virtual void visit_func(E_Func &) {}
+    virtual void visit_bool(E_Bool &) {}
+    virtual void visit_int(E_Int &) {}
+    virtual void visit_float(E_Float &) {}
+    virtual void visit_string(E_String &) {}
+    virtual void visit_list(E_List &) {}
+    virtual void visit_null(E_Null &) {}
+};
+
+
 struct Node {
     typedef std::unique_ptr<Node> Ptr;
 
@@ -22,6 +75,7 @@ struct Node {
     virtual std::string repr(uint32_t = 0) const {
         return "<Node>";
     }
+    virtual void accept(NodeVistor &vis) = 0;
 
     SourcePos pos_start;
     SourcePos pos_end;
@@ -69,10 +123,17 @@ struct S_Block : Node {
 
     virtual bool operator==(const Node &rhs) const override;
     virtual std::string repr(uint32_t indent = 0) const;
+    virtual void accept(NodeVistor &vis) override {
+        vis.visit_block(*this);
+    }
 };
 
 
-struct Program : S_Block {};
+struct Program : S_Block {
+    virtual void accept(NodeVistor &vis) override {
+        vis.visit_program(*this);
+    }
+};
 
 
 struct A_DeclareList {
@@ -94,6 +155,9 @@ struct S_DeclareList : Node {
 
     virtual bool operator==(const Node &rhs) const override;
     virtual std::string repr(uint32_t indent = 0) const;
+    virtual void accept(NodeVistor &vis) override {
+        vis.visit_declare_list(*this);
+    }
 };
 
 
@@ -104,6 +168,9 @@ struct S_Condition : Node {
 
     virtual bool operator==(const Node &rhs) const override;
     virtual std::string repr(uint32_t indent = 0) const;
+    virtual void accept(NodeVistor &vis) override {
+        vis.visit_condition(*this);
+    }
 };
 
 
@@ -113,6 +180,9 @@ struct S_While : Node {
 
     virtual bool operator==(const Node &rhs) const override;
     virtual std::string repr(uint32_t indent = 0) const;
+    virtual void accept(NodeVistor &vis) override {
+        vis.visit_while(*this);
+    }
 };
 
 
@@ -124,16 +194,25 @@ struct S_Return : Node {
 
     virtual bool operator==(const Node &rhs) const override;
     virtual std::string repr(uint32_t indent = 0) const;
+    virtual void accept(NodeVistor &vis) override {
+        vis.visit_return(*this);
+    }
 };
 
 
 struct S_Break : Node {
     virtual std::string repr(uint32_t indent = 0) const;
+    virtual void accept(NodeVistor &vis) override {
+        vis.visit_break(*this);
+    }
 };
 
 
 struct S_Continue : Node {
     virtual std::string repr(uint32_t indent = 0) const;
+    virtual void accept(NodeVistor &vis) override {
+        vis.visit_continue(*this);
+    }
 };
 
 
@@ -142,11 +221,17 @@ struct S_Exp : Node {
 
     virtual bool operator==(const Node &rhs) const override;
     virtual std::string repr(uint32_t indent = 0) const;
+    virtual void accept(NodeVistor &vis) override {
+        vis.visit_stmt_exp(*this);
+    }
 };
 
 
 struct S_Empty : Node {
     virtual std::string repr(uint32_t indent = 0) const;
+    virtual void accept(NodeVistor &vis) override {
+        vis.visit_stmt_empty(*this);
+    }
 };
 
 
@@ -187,6 +272,9 @@ struct E_Op : Node {
 
     virtual bool operator==(const Node &rhs) const override;
     virtual std::string repr(uint32_t indent = 0) const;
+    virtual void accept(NodeVistor &vis) override {
+        vis.visit_op(*this);
+    }
 };
 
 
@@ -203,6 +291,9 @@ struct E_Var : Node {
 
     virtual bool operator==(const Node &rhs) const override;
     virtual std::string repr(uint32_t indent = 0) const;
+    virtual void accept(NodeVistor &vis) override {
+        vis.visit_var(*this);
+    }
 };
 
 
@@ -212,6 +303,9 @@ struct E_Func : Node {
 
     virtual bool operator==(const Node &rhs) const override;
     virtual std::string repr(uint32_t indent = 0) const;
+    virtual void accept(NodeVistor &vis) override {
+        vis.visit_func(*this);
+    }
 };
 
 
@@ -227,6 +321,7 @@ struct _E_Value : Node {
         return other != nullptr && this->value == other->value;
     }
     virtual std::string repr(uint32_t indent = 0) const;
+    virtual void accept(NodeVistor &vis) override;
 };
 
 
@@ -254,10 +349,28 @@ inline std::string _E_Value<ValueType>::repr(uint32_t) const {
 }
 
 
-typedef _E_Value<bool> E_Bool;
-typedef _E_Value<int64_t> E_Int;
-typedef _E_Value<double> E_Float;
-typedef _E_Value<ustring> E_String;
+template<>
+inline void E_Bool::accept(NodeVistor &vis) {
+    vis.visit_bool(*this);
+}
+
+
+template<>
+inline void E_Int::accept(NodeVistor &vis) {
+    vis.visit_int(*this);
+}
+
+
+template<>
+inline void E_Float::accept(NodeVistor &vis) {
+    vis.visit_float(*this);
+}
+
+
+template<>
+inline void E_String::accept(NodeVistor &vis) {
+    vis.visit_string(*this);
+}
 
 
 struct E_List : Node {
@@ -265,11 +378,17 @@ struct E_List : Node {
 
     virtual bool operator==(const Node &rhs) const override;
     virtual std::string repr(uint32_t indent = 0) const;
+    virtual void accept(NodeVistor &vis) override {
+        vis.visit_list(*this);
+    }
 };
 
 
 struct E_Null : Node {
     virtual std::string repr(uint32_t indent = 0) const;
+    virtual void accept(NodeVistor &vis) override {
+        vis.visit_null(*this);
+    }
 };
 
 

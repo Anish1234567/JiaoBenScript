@@ -4,24 +4,16 @@
 
 #include "../eval_ast.h"
 #include "../node.h"
-#include "../name_resolve.h"
 #include "../unicode.h"
 #include "helper_node.hpp"
 
 
-std::function<void (Node *, JBValue *)>
-make_exp_checker(S_Block &block, Frame &frame, AstInterpreter &interp) {
-    return [&](Node *exp, JBValue *expect) {
-        Node::Ptr g(exp);
-        resolve_names_in_block(block, *exp);
-        if (expect != nullptr) {
-            CHECK(interp.eval_exp(frame, *exp) == *expect);
-        } else {
-            // unchecked
-            interp.eval_exp(frame, *exp);
-        }
-    };
-}
+#define CHECK_EXP(exp, expect) \
+    do { \
+        Node *node = exp; \
+        g.emplace_back(node); \
+        REQUIRE(interp.eval_raw_exp(*node) == expect); \
+    } while (0)
 
 
 TEST_CASE("Test basic") {
@@ -49,16 +41,12 @@ TEST_CASE("Test basic") {
     });
     g.emplace_back(root_block);
 
-    resolve_names(*root_block);
-    Frame &root_frame = interp.create_frame(nullptr, *root_block);
-    interp.eval_block(root_frame, *root_block);
+    interp.eval_incomplete_raw_block(*root_block);
 
     auto eval_exp = [&](Node *exp) {
         g.emplace_back(exp);
-        resolve_names_in_block(*root_block, *exp);
-        interp.eval_exp(root_frame, *exp);
+        interp.eval_raw_exp(*exp);
     };
-    auto checker = make_exp_checker(*root_block, root_frame, interp);
 
     JBInt zero(0);
     JBInt one(1);
@@ -67,20 +55,19 @@ TEST_CASE("Test basic") {
     JBInt four(4);
 
     SECTION("arithmeic expression") {
-        checker(V("zero"), &zero);
-        checker(make_binop('-', V("two"), V("one")), &one);
-        checker(make_binop('+', V("two"), T(-1)), &one);
+        CHECK_EXP(V("zero"), zero);
+        CHECK_EXP(make_binop('-', V("two"), V("one")), one);
+        CHECK_EXP(make_binop('+', V("two"), T(-1)), one);
     }
 
     SECTION("unbound variable") {
         E_Var x(USTRING("x"));
-        resolve_names_in_block(*root_block, x);
-        CHECK_THROWS_AS(interp.eval_exp(root_frame, x), JBError);
+        CHECK_THROWS_AS(interp.eval_raw_exp(x), JBError);
     }
 
     SECTION("assign") {
-        checker(make_binop('=', V("x"), T(1)), &one);
-        checker(V("x"), &one);
+        CHECK_EXP(make_binop('=', V("x"), T(1)), one);
+        CHECK_EXP(V("x"), one);
     }
 
     SECTION("declare") {
@@ -89,15 +76,15 @@ TEST_CASE("Test basic") {
             {"z", nullptr},
         });
         g.emplace_back(decls);
-        interp.eval_raw_decl_list(root_frame, static_cast<S_DeclareList &>(*decls));
-        checker(V("y"), &one);
+        interp.eval_raw_decl_list(static_cast<S_DeclareList &>(*decls));
+        CHECK_EXP(V("y"), one);
     }
 
     SECTION("function call") {
         E_Func *func = make_func(nullptr, make_block({
             make_return(V("one")),
         }));
-        checker(make_call(func, {}), &one);
+        CHECK_EXP(make_call(func, {}), one);
     }
 
     eval_exp(make_binop('=', V("f1"), make_func(
@@ -112,10 +99,10 @@ TEST_CASE("Test basic") {
 
     SECTION("function call args") {
         // use default args
-        checker(make_call(V("f1"), {T(0)}), &three);
-        checker(make_call(V("f1"), {T(1)}), &four);
+        CHECK_EXP(make_call(V("f1"), {T(0)}), three);
+        CHECK_EXP(make_call(V("f1"), {T(1)}), four);
         // fill default args
-        checker(make_call(V("f1"), {T(1), T(1)}), &three);
+        CHECK_EXP(make_call(V("f1"), {T(1), T(1)}), three);
 
         // too few args
         CHECK_THROWS_AS(eval_exp(make_call(V("f1"), {})), JBError);
@@ -130,10 +117,10 @@ TEST_CASE("Test basic") {
     JBNull nil;
 
     SECTION("function closure write") {
-        checker(make_call(V("f2"), {}), &nil);
-        checker(V("count"), &one);
-        checker(make_call(V("f2"), {}), &nil);
-        checker(V("count"), &two);
+        CHECK_EXP(make_call(V("f2"), {}), nil);
+        CHECK_EXP(V("count"), one);
+        CHECK_EXP(make_call(V("f2"), {}), nil);
+        CHECK_EXP(V("count"), two);
     }
 
     eval_exp(make_binop('=', V("f3"), make_func(
@@ -147,9 +134,9 @@ TEST_CASE("Test basic") {
 
     SECTION("if-else") {
         eval_exp(make_binop('=', V("x"), T(1)));
-        checker(make_call(V("f3"), {}), &one);
+        CHECK_EXP(make_call(V("f3"), {}), one);
         eval_exp(make_binop('=', V("x"), T(0)));
-        checker(make_call(V("f3"), {}), &two);
+        CHECK_EXP(make_call(V("f3"), {}), two);
     }
 
     eval_exp(make_binop('=', V("f4"), make_func(
@@ -195,23 +182,23 @@ TEST_CASE("Test basic") {
 
     SECTION("while") {
         JBInt seven(7);
-        checker(make_call(V("f4"), {T(3), T(4)}), &seven);
-        checker(make_call(V("f4"), {T(3), T(2)}), &zero);
+        CHECK_EXP(make_call(V("f4"), {T(3), T(4)}), seven);
+        CHECK_EXP(make_call(V("f4"), {T(3), T(2)}), zero);
     }
 
     SECTION("list") {
         // getitem
-        checker(make_binop('[]', V("L"), V("one")), &two);
-        checker(make_binop('[]', V("L"), V("zero")), &one);
+        CHECK_EXP(make_binop('[]', V("L"), V("one")), two);
+        CHECK_EXP(make_binop('[]', V("L"), V("zero")), one);
 
         // setitem
-        checker(
+        CHECK_EXP(
             make_binop('=',
                 make_binop('[]', V("L"), V("one")),
                 V("zero")),
-            &zero
+            zero
         );
-        checker(make_binop('[]', V("L"), V("one")), &zero);
+        CHECK_EXP(make_binop('[]', V("L"), V("one")), zero);
 
         // range error
         CHECK_THROWS_AS(eval_exp(make_binop('[]', V("L"), V("three"))), JBError);
@@ -225,3 +212,6 @@ TEST_CASE("Test basic") {
         CHECK_THROWS_AS(eval_exp(make_binop('[]', V("x"), V("zero"))), JBError);
     }
 }
+
+
+// TODO: test and, or, explist
