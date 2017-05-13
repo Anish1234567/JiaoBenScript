@@ -4,82 +4,6 @@
 #include "name_resolve.h"
 
 
-static void iter_blocks(Node &stmt, std::function<void (S_Block &)> callback) {
-    if (S_Block *block = dynamic_cast<S_Block *>(&stmt)) {
-        callback(*block);
-    } else if (S_While *wh = dynamic_cast<S_While *>(&stmt)) {
-        callback(static_cast<S_Block &>(*wh->block));
-    } else if (S_Condition *cond = dynamic_cast<S_Condition *>(&stmt)) {
-        callback(static_cast<S_Block &>(*cond->then_block));
-        if (cond->else_block) {
-            iter_blocks(*cond->else_block, callback);
-        }
-    }
-    // TODO: for, do-while
-}
-
-
-static void iter_terminal_exp_shallow(Node &node, std::function<void(Node &)> callback) {
-    Node *pnode = &node;
-    if (S_DeclareList *decls = dynamic_cast<S_DeclareList *>(pnode)) {
-        for (const auto &pair : decls->decls) {
-            if (pair.initial) {
-                iter_terminal_exp_shallow(*pair.initial, callback);
-            }
-        }
-    } else if (S_Condition *cond = dynamic_cast<S_Condition *>(pnode)) {
-        iter_terminal_exp_shallow(*cond->condition, callback);
-        if (cond->else_block) {
-            iter_terminal_exp_shallow(*cond->else_block, callback);
-        }
-    } else if (S_While *wh = dynamic_cast<S_While *>(pnode)) {
-        iter_terminal_exp_shallow(*wh->condition, callback);
-    // TODO: for do-while
-    } else if (S_Return *ret = dynamic_cast<S_Return *>(pnode)) {
-        if (ret->value) {
-            iter_terminal_exp_shallow(*ret->value, callback);
-        }
-    } else if (dynamic_cast<S_Block *>(pnode) || dynamic_cast<S_Continue *>(pnode)
-        || dynamic_cast<S_Break *>(pnode) || dynamic_cast<S_Empty *>(pnode))
-    {
-        // pass
-    } else if (S_Exp *stmt = dynamic_cast<S_Exp *>(pnode)) {
-        iter_terminal_exp_shallow(*stmt->value, callback);
-    } else if (E_Op *exp = dynamic_cast<E_Op *>(pnode)) {
-        callback(*exp);
-        for (Node::Ptr &arg : exp->args) {
-            iter_terminal_exp_shallow(*arg, callback);
-        }
-    } else if (E_List *list = dynamic_cast<E_List *>(pnode)) {
-        // callback(*list);
-        for (Node::Ptr &item : list->value) {
-            iter_terminal_exp_shallow(*item, callback);
-        }
-    } else {
-        // terminal expression
-        callback(*pnode);
-    }
-}
-
-
-static void iter_funcs(Node &stmt, std::function<void (E_Func &)> callback) {
-    iter_terminal_exp_shallow(stmt, [&](Node &node) {
-        if (E_Func *func = dynamic_cast<E_Func *>(&node)) {
-            callback(*func);
-        }
-    });
-}
-
-
-static void iter_vars(Node &stmt, std::function<void (E_Var &)> callback) {
-    iter_terminal_exp_shallow(stmt, [&](Node &node) {
-        if (E_Var *var = dynamic_cast<E_Var *>(&node)) {
-            callback(*var);
-        }
-    });
-}
-
-
 static void add_declarations_to_block_attr(S_Block::AttrType &attr, const S_DeclareList &decls) {
     decls.attr.start_index = static_cast<int>(attr.local_info.size());
     for (const auto &pair : decls.decls) {
@@ -120,63 +44,132 @@ static int add_nonlocal_to_block_attr(S_Block::AttrType &attr, const ustring &na
 }
 
 
-static void resolve_names_in_block_no_decl(S_Block &block, Node &node) {
-    // TODO: for stmt
-    iter_blocks(node, [&](S_Block &child_block) {
-        child_block.attr.parent = &block;
-        resolve_names(child_block);
-    });
+struct RestoreOnExit {
+    RestoreOnExit(S_Block **location, S_Block *block)
+        : location(location), block(block)
+    {}
+    ~RestoreOnExit() {
+        *this->location = this->block;
+    }
 
-    iter_vars(node, [&](E_Var &var) {
-        auto it = block.attr.name_to_local_index.find(var.name);
-        if (it != block.attr.name_to_local_index.end()) {
+    S_Block **location;
+    S_Block *block;
+};
+
+
+class Resolver : public NodeVistor {
+public:
+    Resolver(S_Block *cur_block) : cur_block(cur_block) {}
+
+    virtual void visit_block(S_Block &block) {
+        auto _ = this->enter(block);
+
+        for (Node::Ptr &stmt : block.stmts) {
+            if (S_DeclareList *decls = dynamic_cast<S_DeclareList *>(stmt.get())) {
+                add_declarations_to_block_attr(block.attr, *decls);
+            }
+        }
+
+        for (Node::Ptr &stmt : block.stmts) {
+            stmt->accept(*this);
+        }
+    }
+
+    virtual void visit_program(Program &prog) {
+        this->visit_block(prog);
+    }
+
+    virtual void visit_declare_list(S_DeclareList &decls) {
+        for (const auto &pair : decls.decls) {
+            if (pair.initial) {
+                pair.initial->accept(*this);
+            }
+        }
+    }
+
+    virtual void visit_condition(S_Condition &cond) {
+        cond.condition->accept(*this);
+        cond.then_block->accept(*this);
+        if (cond.else_block) {
+            cond.else_block->accept(*this);
+        }
+    }
+
+    virtual void visit_while(S_While &wh) {
+        wh.condition->accept(*this);
+        wh.block->accept(*this);
+    }
+
+    virtual void visit_return(S_Return &ret) {
+        if (ret.value) {
+            ret.value->accept(*this);
+        }
+    }
+
+    virtual void visit_stmt_exp(S_Exp &stmt) {
+        stmt.value->accept(*this);
+    }
+
+    virtual void visit_op(E_Op &exp) {
+        for (Node::Ptr &arg : exp.args) {
+            arg->accept(*this);
+        }
+    }
+
+    virtual void visit_var(E_Var &var) {
+        assert(this->cur_block);
+        S_Block::AttrType &attr = this->cur_block->attr;
+        auto it = attr.name_to_local_index.find(var.name);
+        if (it != attr.name_to_local_index.end()) {
             var.attr.is_local = true;
             var.attr.index = it->second;
         } else {
             var.attr.is_local = false;
-            var.attr.index = add_nonlocal_to_block_attr(
-                block.attr, var.name, block.attr.parent
-            );
+            var.attr.index = add_nonlocal_to_block_attr(attr, var.name, attr.parent);
         }
-    });
+    }
 
-    iter_funcs(node, [&](E_Func &func) {
+    virtual void visit_func(E_Func &func) {
         S_Block &func_block = static_cast<S_Block &>(*func.block);
-        if (func.args) {
-            iter_vars(*func.args, [&](E_Var &var) {
-                var.attr.is_local = false;
-                var.attr.index = add_nonlocal_to_block_attr(
-                    func_block.attr, var.name, &block
-                );
-            });
 
+        if (func.args) {
+            auto _ = this->enter(func_block);
+            func.args->accept(*this);
             add_declarations_to_block_attr(
                 func_block.attr, static_cast<S_DeclareList &>(*func.args)
             );
         }
 
-        func_block.attr.parent = &block;
-        resolve_names(func_block);
-    });
-}
+        func_block.accept(*this);
+    }
+
+    virtual void visit_list(E_List &list) {
+        for (Node::Ptr &item : list.value) {
+            item->accept(*this);
+        }
+    }
+
+private:
+    RestoreOnExit enter(S_Block &block) {
+        S_Block *origin = this->cur_block;
+        this->cur_block = &block;
+        block.attr.parent = origin;
+        return RestoreOnExit(&this->cur_block, origin);
+    }
+
+    S_Block *cur_block = nullptr;
+};
 
 
 void resolve_names_in_block(S_Block &block, Node &node) {
     if (S_DeclareList *decls = dynamic_cast<S_DeclareList *>(&node)) {
         add_declarations_to_block_attr(block.attr, *decls);
     }
-    resolve_names_in_block_no_decl(block, node);
+    Resolver res(&block);
+    node.accept(res);
 }
 
 
 void resolve_names(S_Block &block) {
-    for (Node::Ptr &stmt : block.stmts) {
-        if (S_DeclareList *decls = dynamic_cast<S_DeclareList *>(stmt.get())) {
-            add_declarations_to_block_attr(block.attr, *decls);
-        }
-    }
-
-    for (Node::Ptr &node : block.stmts) {
-        resolve_names_in_block_no_decl(block, *node);
-    }
+    Resolver(nullptr).visit_block(block);
 }
