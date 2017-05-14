@@ -1,5 +1,5 @@
-#ifndef UTILS_HPP
-#define UTILS_HPP
+#ifndef REPR_HPP
+#define REPR_HPP
 
 
 #include <string>
@@ -47,4 +47,4 @@ inline std::string repr(bool value) {
 }
 
 
-#endif // UTILS_HPP
+#endif // REPR_HPP

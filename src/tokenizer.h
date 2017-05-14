@@ -10,7 +10,7 @@
 
 #include "unicode.h"
 #include "sourcepos.h"
-#include "utils.hpp"
+#include "repr.hpp"
 
 
 enum class TokenCode : uint32_t {

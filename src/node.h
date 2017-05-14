@@ -10,7 +10,7 @@
 #include "sourcepos.h"
 #include "unicode.h"
 #include "string_fmt.hpp"
-#include "utils.hpp"
+#include "repr.hpp"
 
 
 // forward declarations

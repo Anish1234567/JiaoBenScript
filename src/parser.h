@@ -133,7 +133,7 @@ private:
         const TokenType &tokcast = static_cast<const TokenType &>(tok);
         this->nodes.emplace_back(new NodeType(tokcast.value));
         this->leave();
-    };
+    }
 
     void unpected_token(const Token &tok, const std::string &addtional = "");
 

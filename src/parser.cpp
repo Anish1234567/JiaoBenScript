@@ -603,7 +603,7 @@ void Parser::enter_stmt() {
 void Parser::enter_block() {
     this->nodes.emplace_back(new S_Block());
     this->states.push_back(ParserState::BLOCK);
-};
+}
 
 
 void Parser::enter_block_pre() {
