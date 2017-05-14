@@ -50,8 +50,8 @@ bool is_surrogate(unichar ch);
 unichar u16_assemble_surrogate(unichar hi, unichar lo);
 
 
-#define UCHAR u8_read_char  // convert a string literal to unichar
-#define USTRING u8_decode   // convert a string literal to ustring
+#define UCHAR(ch) (U ## ch)             // convert a string literal to unichar
+#define USTRING(str) ustring(U ## str)  // convert a string literal to ustring
 
 
 #endif //JIAOBENSCRIPT_UNICODE_H

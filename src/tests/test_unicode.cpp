@@ -74,7 +74,7 @@ TEST_CASE("Test unicode length") {
 
 
 TEST_CASE("Test surrogate") {
-    CHECK(UCHAR("𤭢") == u16_assemble_surrogate(0xd852, 0xdf62));
+    CHECK(UCHAR('𤭢') == u16_assemble_surrogate(0xd852, 0xdf62));
 }
 
 
