@@ -85,17 +85,17 @@ private:
     void enter_program_or_exp();
     void enter_program();
     void enter_stmt();
-    void enter_block();
+    void enter_block(const Token &tok);
     void enter_block_pre();
-    void enter_return();
-    void enter_condition();
+    void enter_return(const Token &tok);
+    void enter_condition(const Token &tok);
     void enter_else();
-    void enter_continue();
-    void enter_break();
-    void enter_var_decl();
-    void enter_var_decl_list();
+    void enter_continue(const Token &tok);
+    void enter_break(const Token &tok);
+    void enter_var_decl(const Token &tok);
+    void enter_var_decl_list(const Token &tok);
     void enter_var_decl_item();
-    void enter_while();
+    void enter_while(const Token &tok);
     void enter_exp();
     void enter_exp_list();
     void enter_exp_list_abs();
@@ -110,9 +110,9 @@ private:
     void enter_exp_not();
     void enter_exp_call_or_subs();
     void enter_exp_t();
-    void enter_list();
-    void enter_function();
-    void enter_arg_decl_list();
+    void enter_list(const Token &tok);
+    void enter_function(const Token &tok);
+    void enter_arg_decl_list(const Token &tok);
 
     void leave();
     void pass_up(const Token &tok);
@@ -129,11 +129,7 @@ private:
         MemFunc next_enter);
 
     template<class TokenType, class NodeType>
-    void do_const(const Token &tok) {
-        const TokenType &tokcast = static_cast<const TokenType &>(tok);
-        this->nodes.emplace_back(new NodeType(tokcast.value));
-        this->leave();
-    }
+    void do_const(const Token &tok);
 
     void unpected_token(const Token &tok, const std::string &addtional = "");
 
@@ -155,6 +151,12 @@ private:
         this->nodes.pop_back();
         return top;
     }
+
+    void set_pos_start(const Token &tok);
+    void set_pos_start(const Node &node);
+    void set_pos_end(const Token &tok);
+    void set_pos_end(const Node &node);
+    void set_pos_start_end(const Token &tok);
 
     static bool match_id(const Token &tok, const ustring &id);
 };

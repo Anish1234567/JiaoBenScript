@@ -270,3 +270,63 @@ TEST_CASE("Test if-else") {
 TEST_CASE("Test loop") {
     check_stmt("while (a) {}", make_while(V("a"), make_block({})));
 }
+
+
+std::tuple<int, int> get_node_start_end(const std::string &input) {
+    Node::Ptr node = parse_string(input);
+    Node *target = nullptr;
+    if (Program *prog = dynamic_cast<Program *>(node.get())) {
+        REQUIRE(prog->stmts.size() == 1);
+        target = prog->stmts[0].get();
+    } else {
+        target = node.get();
+    }
+    return std::make_tuple(target->pos_start.rowno, target->pos_end.rowno);
+}
+
+
+TEST_CASE("Test source pos") {
+    CHECK(get_node_start_end("1") == std::make_tuple(0, 0));
+    CHECK(get_node_start_end("(1)") == std::make_tuple(1, 1));  // FIXME: include parenthesis
+    CHECK(get_node_start_end("+1") == std::make_tuple(0, 1));
+    CHECK(get_node_start_end("1 + 1") == std::make_tuple(0, 4));
+    CHECK(get_node_start_end("- 1 + 1 * 2") == std::make_tuple(0, 10));
+
+    CHECK(get_node_start_end("ab") == std::make_tuple(0, 1));
+    CHECK(get_node_start_end("null") == std::make_tuple(0, 3));
+    CHECK(get_node_start_end("true") == std::make_tuple(0, 3));
+    CHECK(get_node_start_end("false") == std::make_tuple(0, 4));
+    CHECK(get_node_start_end("\"als\"") == std::make_tuple(0, 4));
+
+    CHECK(get_node_start_end(";") == std::make_tuple(0, 0));
+    CHECK(get_node_start_end(" ; ") == std::make_tuple(1, 1));
+    CHECK(get_node_start_end("a;") == std::make_tuple(0, 1));
+    CHECK(get_node_start_end("break;") == std::make_tuple(0, 5));
+    CHECK(get_node_start_end("continue;") == std::make_tuple(0, 8));
+    CHECK(get_node_start_end("break ;") == std::make_tuple(0, 6));
+    CHECK(get_node_start_end("{}") == std::make_tuple(0, 1));
+    CHECK(get_node_start_end("function () {}") == std::make_tuple(0, 13));
+    CHECK(get_node_start_end("if (a) {}") == std::make_tuple(0, 8));
+    CHECK(get_node_start_end("if (a) {} else {}") == std::make_tuple(0, 16));
+    CHECK(get_node_start_end("while (a) {}") == std::make_tuple(0, 11));
+
+    CHECK(get_node_start_end("[]") == std::make_tuple(0, 1));
+    CHECK(get_node_start_end("[1]") == std::make_tuple(0, 2));
+    CHECK(get_node_start_end("a()") == std::make_tuple(0, 2));
+    CHECK(get_node_start_end("a(1)") == std::make_tuple(0, 3));
+    CHECK(get_node_start_end("a[1]") == std::make_tuple(0, 3));
+
+    CHECK(get_node_start_end("let a;") == std::make_tuple(0, 5));
+    CHECK(get_node_start_end("let a, b;") == std::make_tuple(0, 8));
+    CHECK(get_node_start_end("let a = 1, b;") == std::make_tuple(0, 12));
+
+    Node::Ptr func = parse_string("function (a) {}");
+    Node::Ptr &args = dynamic_cast<E_Func &>(*func).args;
+    CHECK(args->pos_start == SourcePos(0, 10));
+    CHECK(args->pos_end == SourcePos(0, 10));
+
+    Node::Ptr call = parse_string("a(b)");
+    E_Op &call_args = dynamic_cast<E_Op &>(*dynamic_cast<E_Op &>(*call).args[1]);
+    CHECK(call_args.pos_start.rowno == 2);
+    CHECK(call_args.pos_end.rowno == 2);
+}

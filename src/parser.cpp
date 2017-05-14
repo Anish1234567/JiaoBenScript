@@ -110,7 +110,6 @@ bool Parser::match_id(const Token &tok, const ustring &id) {
 
 
 void Parser::feed(const Token &tok) {
-    // TODO: set lineno
     // TODO: replace ParserState with member function pointer
     if (this->states.empty()) {
         return this->unpected_token(tok, "parser not started");
@@ -125,7 +124,9 @@ void Parser::feed(const Token &tok) {
     } else if (cur == ParserState::PROGRAM || cur == ParserState::PROGRAM_OR_EXP) {
         Program *p = this->get_top2<Program>();
         p->stmts.emplace_back(this->pop_top());
+        this->set_pos_start(*p->stmts.front());
         if (tok.tokencode == TokenCode::END) {
+            this->set_pos_end(*p->stmts.back());
             this->shift(ParserState::END);
         } else {
             this->enter_stmt();
@@ -135,28 +136,29 @@ void Parser::feed(const Token &tok) {
         if (tok.tokencode == TokenCode::SEMICOLON) {
             // empty stmt
             this->nodes.emplace_back(new S_Empty());
+            this->set_pos_start_end(tok);
             this->leave();
         } else if (tok.tokencode == TokenCode::LBRACE) {
             this->leave();
-            this->enter_block();
+            this->enter_block(tok);
         } else if (match_id(tok, USTRING("return"))) {
             this->leave();
-            this->enter_return();
+            this->enter_return(tok);
         } else if (match_id(tok, USTRING("continue"))) {
             this->leave();
-            this->enter_continue();
+            this->enter_continue(tok);
         } else if (match_id(tok, USTRING("break"))) {
             this->leave();
-            this->enter_break();
+            this->enter_break(tok);
         } else if (match_id(tok, USTRING("let"))) {
             this->leave();
-            this->enter_var_decl();
+            this->enter_var_decl(tok);
         } else if (match_id(tok, USTRING("if"))) {
             this->leave();
-            this->enter_condition();
+            this->enter_condition(tok);
         } else if (match_id(tok, USTRING("while"))) {
             this->leave();
-            this->enter_while();
+            this->enter_while(tok);
         }
         // TODO: do-while, for
         else {
@@ -169,7 +171,9 @@ void Parser::feed(const Token &tok) {
             // replace expression with S_Exp
             S_Exp *stmt = new S_Exp();
             stmt->value.reset(this->pop_top());
+            stmt->pos_start = stmt->value->pos_start;
             this->nodes.emplace_back(stmt);
+            this->set_pos_end(tok);
             this->leave();
         } else if (this->states.front() == ParserState::PROGRAM_OR_EXP) {
             if (tok.tokencode == TokenCode::END) {
@@ -189,6 +193,7 @@ void Parser::feed(const Token &tok) {
         }
     } else if (cur == ParserState::BLOCK) {
         if (tok.tokencode == TokenCode::RBRACE) {
+            this->set_pos_end(tok);
             // empty block
             this->leave();
         } else {
@@ -200,6 +205,7 @@ void Parser::feed(const Token &tok) {
         S_Block *block = this->get_top2<S_Block>();
         block->stmts.emplace_back(this->pop_top());
         if (tok.tokencode == TokenCode::RBRACE) {
+            this->set_pos_end(tok);
             this->leave();
         } else {
             this->enter_stmt();
@@ -208,12 +214,13 @@ void Parser::feed(const Token &tok) {
     } else if (cur == ParserState::BLOCK_PRE) {
         if (tok.tokencode == TokenCode::LBRACE) {
             this->leave();
-            this->enter_block();
+            this->enter_block(tok);
         } else {
             this->unpected_token(tok, "expect {");
         }
     } else if (cur == ParserState::RETURN) {
         if (tok.tokencode == TokenCode::SEMICOLON) {
+            this->set_pos_end(tok);
             this->leave();
         } else {
             this->shift(ParserState::RETURN_EXP);
@@ -224,6 +231,7 @@ void Parser::feed(const Token &tok) {
         if (tok.tokencode == TokenCode::SEMICOLON) {
             S_Return *ret = this->get_top2<S_Return>();
             ret->value.reset(this->pop_top());
+            this->set_pos_end(tok);
             this->leave();
         } else {
             this->unpected_token(tok, "expect semicolon");
@@ -251,19 +259,21 @@ void Parser::feed(const Token &tok) {
             this->shift(ParserState::COND_END);
             this->enter_else();
         } else {
+            this->set_pos_end(*cond->then_block);
             this->pass_up(tok);
         }
     } else if (cur == ParserState::COND_END) {
         S_Condition *cond = this->get_top2<S_Condition>();
         cond->else_block.reset(this->pop_top());
+        this->set_pos_end(*cond->else_block);
         this->pass_up(tok);
     } else if (cur == ParserState::ELSE) {
         if (match_id(tok, USTRING("if"))) {
             this->leave();
-            this->enter_condition();
+            this->enter_condition(tok);
         } else if (tok.tokencode == TokenCode::LBRACE) {
             this->leave();
-            this->enter_block();
+            this->enter_block(tok);
         } else {
             this->unpected_token(tok, "expect 'if' or block");
         }
@@ -272,6 +282,7 @@ void Parser::feed(const Token &tok) {
         || cur == ParserState::VAR_DECL)
     {
         if (tok.tokencode == TokenCode::SEMICOLON) {
+            this->set_pos_end(tok);
             this->leave();
         } else {
             this->unpected_token(tok, "expect semicolon");
@@ -286,6 +297,7 @@ void Parser::feed(const Token &tok) {
         S_DeclareList *decls = this->get_top1<S_DeclareList>();
         if (tok.tokencode == TokenCode::ID) {
             decls->decls.emplace_back(static_cast<const TokenId &>(tok).value, Node::Ptr());
+            decls->pos_end = tok.pos_end;
             this->shift(ParserState::VAR_DECL_ITEM_END);
         } else {
             this->unpected_token(tok, "expect identifier");
@@ -300,6 +312,7 @@ void Parser::feed(const Token &tok) {
     } else if (cur == ParserState::VAR_DECL_ITEM_INIT) {
         S_DeclareList *decls = this->get_top2<S_DeclareList>();
         decls->decls.back().initial.reset(this->pop_top());
+        this->set_pos_end(*decls->decls.back().initial);
         this->pass_up(tok);
     } else if (cur == ParserState::WHILE_LPAR) {
         if (tok.tokencode == TokenCode::LPAR) {
@@ -320,10 +333,13 @@ void Parser::feed(const Token &tok) {
     } else if (cur == ParserState::WHILE_END) {
         S_While *wh = this->get_top2<S_While>();
         wh->block.reset(this->pop_top());
+        this->set_pos_end(*wh->block);
         this->pass_up(tok);
     } else if (cur == ParserState::EXP_LIST || cur == ParserState::EXP_LIST_ABS) {
         E_Op *list = this->get_top2<E_Op>();
         list->args.emplace_back(this->pop_top());
+        this->set_pos_start(*list->args.front());
+        this->set_pos_end(*list->args.back());
 
         if (tok.tokencode == TokenCode::COMMA) {
             this->enter_exp_assign();
@@ -355,6 +371,7 @@ void Parser::feed(const Token &tok) {
     } else if (cur == ParserState::EXP_ASSIGN_END) {
         E_Op *assign = this->get_top2<E_Op>();
         assign->args.emplace_back(this->pop_top());
+        this->set_pos_end(*assign->args.back());
         this->pass_up(tok);
     } else if (cur == ParserState::EXP_OR) {
         this->do_exp_op(tok, {'||'}, ParserState::EXP_OR_END, &Parser::enter_exp_and);
@@ -386,6 +403,7 @@ void Parser::feed(const Token &tok) {
             OpCode opcode = static_cast<OpCode>(tok.tokencode);
             E_Op *exp = new E_Op(opcode);
             this->nodes.emplace_back(exp);
+            this->set_pos_start(tok);
             this->shift(ParserState::EXP_X_HEAD_END);
             this->enter_exp_not();
         } else {
@@ -399,6 +417,7 @@ void Parser::feed(const Token &tok) {
     } else if (cur == ParserState::EXP_NOT) {
         if (tok.tokencode == TokenCode::NOT) {
             this->nodes.emplace_back(new E_Op(OpCode::NOT));
+            this->set_pos_start(tok);
             this->shift(ParserState::EXP_NOT_END);
             this->enter_exp_call_or_subs();
         } else {
@@ -423,12 +442,14 @@ void Parser::feed(const Token &tok) {
     } else if (cur == ParserState::EXP_SUBS_RSQ) {
         if (tok.tokencode == TokenCode::RSQUARE) {
             this->grow_body();
+            this->set_pos_end(tok);
             this->shift(ParserState::EXP_CALL_OR_SUBS);
         } else {
             this->unpected_token(tok, "expect ]");
         }
     } else if (cur == ParserState::EXP_CALL_AFTER_LPAR) {
         if (tok.tokencode == TokenCode::RPAR) {
+            this->set_pos_end(tok);
             this->shift(ParserState::EXP_CALL_OR_SUBS);
         } else {
             this->shift(ParserState::EXP_CALL_RPAR);
@@ -438,6 +459,7 @@ void Parser::feed(const Token &tok) {
     } else if (cur == ParserState::EXP_CALL_RPAR) {
         if (tok.tokencode == TokenCode::RPAR) {
             this->grow_body();
+            this->set_pos_end(tok);
             this->shift(ParserState::EXP_CALL_OR_SUBS);
         } else {
             this->unpected_token(tok, "expect )");
@@ -454,18 +476,21 @@ void Parser::feed(const Token &tok) {
             this->do_const<TokenString, E_String>(tok);
         } else if (tok.tokencode == TokenCode::LSQUARE) {
             this->leave();
-            this->enter_list();
+            this->enter_list(tok);
         } else if (match_id(tok, USTRING("function"))) {
             this->leave();
-            this->enter_function();
+            this->enter_function(tok);
         } else if (match_id(tok, USTRING("null"))) {
             this->nodes.emplace_back(new E_Null());
+            this->set_pos_start_end(tok);
             this->leave();
         } else if (match_id(tok, USTRING("true"))) {
             this->nodes.emplace_back(new E_Bool(true));
+            this->set_pos_start_end(tok);
             this->leave();
         } else if (match_id(tok, USTRING("false"))) {
             this->nodes.emplace_back(new E_Bool(false));
+            this->set_pos_start_end(tok);
             this->leave();
         } else if (tok.tokencode == TokenCode::ID) {
             // FIXME: check reserved word
@@ -481,6 +506,7 @@ void Parser::feed(const Token &tok) {
         }
     } else if (cur == ParserState::LIST) {
         if (tok.tokencode == TokenCode::RSQUARE) {
+            this->set_pos_end(tok);
             this->leave();
         } else {
             this->shift(ParserState::LIST_END);
@@ -496,6 +522,7 @@ void Parser::feed(const Token &tok) {
                 list->value.emplace_back(item.release());
             }
             this->nodes.pop_back();
+            this->set_pos_end(tok);
             this->leave();
         } else {
             this->unpected_token(tok, "expect ]");
@@ -512,7 +539,7 @@ void Parser::feed(const Token &tok) {
             this->enter_block_pre();
         } else {
             this->shift(ParserState::FUNC_RPAR);
-            this->enter_arg_decl_list();
+            this->enter_arg_decl_list(tok);
             this->feed(tok);
         }
     } else if (cur == ParserState::FUNC_RPAR) {
@@ -528,6 +555,7 @@ void Parser::feed(const Token &tok) {
     } else if (cur == ParserState::FUNC_END) {
         E_Func *func = this->get_top2<E_Func>();
         func->block.reset(this->pop_top());
+        this->set_pos_end(*func->block);
         this->pass_up(tok);
     } else {
         assert(!"Unreachable");
@@ -539,12 +567,14 @@ void Parser::grow_head(OpCode opcode) {
     E_Op *head = new E_Op(opcode);
     head->args.emplace_back(this->pop_top());
     this->nodes.emplace_back(head);
+    this->set_pos_start(*head->args.front());
 }
 
 
 void Parser::grow_body() {
     E_Op *exp = this->get_top2<E_Op>();
     exp->args.emplace_back(this->pop_top());
+    this->set_pos_end(*exp->args.back());
 }
 
 
@@ -576,8 +606,18 @@ void Parser::do_exp_op_end(
         this->grow_head(opcode);
         (this->*next_enter)();
     } else {
+        this->set_pos_end(*exp_op->args.back());
         this->pass_up(tok);
     }
+}
+
+
+template<class TokenType, class NodeType>
+void Parser::do_const(const Token &tok) {
+    const TokenType &tokcast = static_cast<const TokenType &>(tok);
+    this->nodes.emplace_back(new NodeType(tokcast.value));
+    this->set_pos_start_end(tok);
+    this->leave();
 }
 
 
@@ -600,8 +640,9 @@ void Parser::enter_stmt() {
 }
 
 
-void Parser::enter_block() {
+void Parser::enter_block(const Token &tok) {
     this->nodes.emplace_back(new S_Block());
+    this->set_pos_start(tok);
     this->states.push_back(ParserState::BLOCK);
 }
 
@@ -611,14 +652,16 @@ void Parser::enter_block_pre() {
 }
 
 
-void Parser::enter_return() {
+void Parser::enter_return(const Token &tok) {
     this->nodes.emplace_back(new S_Return());
+    this->set_pos_start(tok);
     this->states.push_back(ParserState::RETURN);
 }
 
 
-void Parser::enter_condition() {
+void Parser::enter_condition(const Token &tok) {
     this->nodes.emplace_back(new S_Condition());
+    this->set_pos_start(tok);
     this->states.push_back(ParserState::COND_LPAR);
 }
 
@@ -628,26 +671,29 @@ void Parser::enter_else() {
 }
 
 
-void Parser::enter_continue() {
+void Parser::enter_continue(const Token &tok) {
     this->nodes.emplace_back(new S_Continue());
+    this->set_pos_start(tok);
     this->states.push_back(ParserState::CONTINUE);
 }
 
 
-void Parser::enter_break() {
+void Parser::enter_break(const Token &tok) {
     this->nodes.emplace_back(new S_Break());
+    this->set_pos_start(tok);
     this->states.push_back(ParserState::BREAK);
 }
 
 
-void Parser::enter_var_decl() {
+void Parser::enter_var_decl(const Token &tok) {
     this->states.push_back(ParserState::VAR_DECL);
-    this->enter_var_decl_list();
+    this->enter_var_decl_list(tok);
 }
 
 
-void Parser::enter_var_decl_list() {
+void Parser::enter_var_decl_list(const Token &tok) {
     this->nodes.emplace_back(new S_DeclareList());
+    this->set_pos_start(tok);
     this->states.push_back(ParserState::VAR_DECL_LIST);
     this->enter_var_decl_item();
 }
@@ -658,8 +704,9 @@ void Parser::enter_var_decl_item() {
 }
 
 
-void Parser::enter_while() {
+void Parser::enter_while(const Token &tok) {
     this->nodes.emplace_back(new S_While());
+    this->set_pos_start(tok);
     this->states.push_back(ParserState::WHILE_LPAR);
 }
 
@@ -746,18 +793,50 @@ void Parser::enter_exp_t() {
 }
 
 
-void Parser::enter_list() {
+void Parser::enter_list(const Token &tok) {
     this->nodes.emplace_back(new E_List());
+    this->set_pos_start(tok);
     this->states.push_back(ParserState::LIST);
 }
 
 
-void Parser::enter_function() {
+void Parser::enter_function(const Token &tok) {
     this->nodes.emplace_back(new E_Func());
+    this->set_pos_start(tok);
     this->states.push_back(ParserState::FUNC);
 }
 
 
-void Parser::enter_arg_decl_list() {
-    this->enter_var_decl_list();
+void Parser::enter_arg_decl_list(const Token &tok) {
+    this->enter_var_decl_list(tok);
+}
+
+
+void Parser::set_pos_start(const Token &tok) {
+    assert(!this->nodes.empty());
+    this->nodes.back()->pos_start = tok.pos_start;
+}
+
+
+void Parser::set_pos_start(const Node &node) {
+    assert(!this->nodes.empty());
+    this->nodes.back()->pos_start = node.pos_start;
+}
+
+
+void Parser::set_pos_end(const Token &tok) {
+    assert(!this->nodes.empty());
+    this->nodes.back()->pos_end = tok.pos_end;
+}
+
+
+void Parser::set_pos_end(const Node &node) {
+    assert(!this->nodes.empty());
+    this->nodes.back()->pos_end = node.pos_end;
+}
+
+
+void Parser::set_pos_start_end(const Token &tok) {
+    this->set_pos_start(tok);
+    this->set_pos_end(tok);
 }
