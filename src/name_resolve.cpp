@@ -2,6 +2,7 @@
 #include <vector>
 
 #include "name_resolve.h"
+#include "replace_restore.hpp"
 
 
 static void add_declarations_to_block_attr(S_Block::AttrType &attr, const S_DeclareList &decls) {
@@ -42,19 +43,6 @@ static int add_nonlocal_to_block_attr(S_Block::AttrType &attr, const ustring &na
         return it->second;
     }
 }
-
-
-struct RestoreOnExit {
-    RestoreOnExit(S_Block **location, S_Block *block)
-        : location(location), block(block)
-    {}
-    ~RestoreOnExit() {
-        *this->location = this->block;
-    }
-
-    S_Block **location;
-    S_Block *block;
-};
 
 
 class Resolver : public NodeVistor {
@@ -150,11 +138,9 @@ public:
     }
 
 private:
-    RestoreOnExit enter(S_Block &block) {
-        S_Block *origin = this->cur_block;
-        this->cur_block = &block;
-        block.attr.parent = origin;
-        return RestoreOnExit(&this->cur_block, origin);
+    ReplaceRestore<S_Block *> enter(S_Block &block) {
+        block.attr.parent = this->cur_block;
+        return ReplaceRestore<S_Block *>(&this->cur_block, &block);
     }
 
     S_Block *cur_block = nullptr;

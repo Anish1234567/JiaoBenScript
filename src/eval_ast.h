@@ -11,6 +11,7 @@
 #include "builtins.h"
 #include "jbobject.h"
 #include "node.h"
+#include "replace_restore.hpp"
 
 
 struct Signal {};
@@ -36,18 +37,6 @@ public:
     std::vector<JBValue *> vars;
 
     virtual void each_ref(std::function<void (JBObject &)> callback) override;
-};
-
-
-template<class S>
-class StackPoper {
-public:
-    StackPoper(S &stk) : stk(stk) {}
-    ~StackPoper() {
-        assert(!this->stk.empty());
-        this->stk.pop();
-    }
-    S &stk;
 };
 
 
@@ -88,7 +77,7 @@ private:
     Frame &create_frame(Frame *parent, S_Block &block);
 
     void return_value(JBValue &value);
-    StackPoper<std::stack<Frame *>> enter(S_Block &block, Frame *parent_frame = nullptr);
+    ReplaceRestore<Frame *> enter(S_Block &block, Frame *parent_frame = nullptr);
     JBValue &eval_exp(Node &node);
     JBValue **resolve_var(const E_Var &var);
     void resolve_names_current_block(Node &node);
@@ -110,7 +99,7 @@ private:
     void handle_explist(E_Op &exp);
     void handle_block(S_Block &block);
 
-    std::stack<Frame *> frames;
+    Frame *cur_frame = nullptr;
     std::stack<JBValue *> values;
 
     Allocator allocator;

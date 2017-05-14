@@ -21,16 +21,17 @@ void Frame::each_ref(std::function<void(JBObject &child)> callback) {
 
 
 void AstInterpreter::eval_incomplete_raw_block(S_Block &block) {
-    assert(this->frames.empty());
+    assert(this->cur_frame == nullptr);
     ::resolve_names(block);
-    this->frames.push(&this->create_frame(nullptr, block));
+    this->cur_frame = &this->create_frame(nullptr, block);
     this->handle_block(block);
 }
 
 
 void AstInterpreter::eval_raw_decl_list(S_DeclareList &decls) {
     this->resolve_names_current_block(decls);
-    Frame &frame = *this->frames.top();
+    assert(this->cur_frame);
+    Frame &frame = *this->cur_frame;
     // extend frame.vars
     frame.vars.reserve(frame.vars.size() + decls.decls.size());
     for (size_t i = 0; i < decls.decls.size(); ++i) {
@@ -64,14 +65,14 @@ void AstInterpreter::visit_block(S_Block &block) {
 
 
 void AstInterpreter::visit_program(Program &prog) {
-    assert(this->frames.empty());
+    assert(this->cur_frame == nullptr);
     this->visit_block(prog);
 }
 
 
 void AstInterpreter::visit_declare_list(S_DeclareList &decls) {
-    assert(!this->frames.empty());
-    Frame &frame = *this->frames.top();
+    assert(this->cur_frame);
+    Frame &frame = *this->cur_frame;
     for (size_t i = 0; i < decls.decls.size(); ++i) {
         const auto &pair = decls.decls[i];
         if (pair.initial) {
@@ -217,8 +218,8 @@ void AstInterpreter::visit_var(E_Var &var) {
 void AstInterpreter::visit_func(E_Func &func) {
     // TODO: set frame to nullptr if func.block and its children do not have non-local variable
     // S_Block &block = static_cast<S_Block &>(*func.block);
-    assert(!this->frames.empty());
-    this->return_value(this->create<JBFunc>(this->frames.top(), func));
+    assert(this->cur_frame);
+    this->return_value(this->create<JBFunc>(this->cur_frame, func));
 }
 
 
@@ -281,18 +282,17 @@ JBValue &AstInterpreter::eval_exp(Node &node) {
 }
 
 
-StackPoper<std::stack<Frame *>> AstInterpreter::enter(S_Block &block, Frame *parent_frame) {
-    if (parent_frame == nullptr && !this->frames.empty()) {
-        parent_frame = this->frames.top();
+ReplaceRestore<Frame *> AstInterpreter::enter(S_Block &block, Frame *parent_frame) {
+    if (parent_frame == nullptr) {
+        parent_frame = this->cur_frame;
     }
-    this->frames.push(&this->create_frame(parent_frame, block));
-    return StackPoper<std::stack<Frame *>>(this->frames);
+    return ReplaceRestore<Frame *>(&this->cur_frame, &this->create_frame(parent_frame, block));
 }
 
 
 JBValue **AstInterpreter::resolve_var(const E_Var &var) {
-    assert(!this->frames.empty());
-    Frame &frame = *this->frames.top();
+    assert(this->cur_frame);
+    Frame &frame = *this->cur_frame;
     if (var.attr.is_local) {
         return &frame.vars[var.attr.index];
     } else {
@@ -309,10 +309,9 @@ JBValue **AstInterpreter::resolve_var(const E_Var &var) {
 
 
 void AstInterpreter::resolve_names_current_block(Node &node) {
-    assert(!this->frames.empty());
-    Frame &frame = *this->frames.top();
-    assert(frame.block);
-    ::resolve_names_in_block(*frame.block, node);
+    assert(this->cur_frame);
+    assert(this->cur_frame->block);
+    ::resolve_names_in_block(*this->cur_frame->block, node);
 }
 
 
@@ -436,7 +435,7 @@ void AstInterpreter::handle_call(E_Op &call) {
         // create new frame
         S_Block &func_block = static_cast<S_Block &>(*func->code.block);
         auto _ = this->enter(func_block, func->parent_frame);
-        Frame &func_frame = *this->frames.top();
+        Frame &func_frame = *this->cur_frame;
 
         // eval arguments
         std::vector<JBValue *> arg_values;
