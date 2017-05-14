@@ -269,15 +269,15 @@ Frame &AstInterpreter::create_frame(Frame *parent, S_Block &block) {
 
 
 void AstInterpreter::return_value(JBValue &value) {
-    this->values.push(&value);
+    this->returned = &value;
 }
 
 
 JBValue &AstInterpreter::eval_exp(Node &node) {
     node.accept(*this);
-    assert(!this->values.empty());
-    JBValue *ret = this->values.top();
-    this->values.pop();
+    assert(this->returned);
+    JBValue *ret = nullptr;
+    std::swap(this->returned, ret);
     return *ret;
 }
 

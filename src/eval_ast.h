@@ -4,7 +4,6 @@
 #include <functional>
 #include <utility>
 #include <vector>
-#include <stack>
 
 #include "allocator.h"
 #include "exceptions.h"
@@ -100,7 +99,7 @@ private:
     void handle_block(S_Block &block);
 
     Frame *cur_frame = nullptr;
-    std::stack<JBValue *> values;
+    JBValue *returned = nullptr;
 
     Allocator allocator;
     Builtins builtins;
