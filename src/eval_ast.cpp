@@ -51,6 +51,12 @@ JBValue& AstInterpreter::eval_raw_exp(Node &exp) {
 void AstInterpreter::eval_raw_stmt(Node &node) {
     if (S_DeclareList *decls = dynamic_cast<S_DeclareList *>(&node)) {
         this->eval_raw_decl_list(*decls);
+    } else if (S_Return *ret = dynamic_cast<S_Return *>(&node)) {
+        throw BadReturn(*ret);
+    } else if (S_Break *brk = dynamic_cast<S_Break *>(&node)) {
+        throw BadBreak(*brk);
+    } else if (S_Continue *cont = dynamic_cast<S_Continue *>(&node)) {
+        throw BadContinue(*cont);
     } else {
         this->resolve_names_current_block(node);
         node.accept(*this);
