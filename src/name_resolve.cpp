@@ -5,16 +5,21 @@
 #include "replace_restore.hpp"
 
 
+static void add_name_to_block_attr(S_Block::AttrType &attr, const ustring &name) {
+    auto it = attr.name_to_local_index.find(name);
+    if (it != attr.name_to_local_index.end()) {
+        throw DuplicatedLocalName("Duplicated local name: " + u8_encode(name));
+    }
+
+    attr.name_to_local_index.emplace(name, attr.local_info.size());
+    attr.local_info.emplace_back(name);
+}
+
+
 static void add_declarations_to_block_attr(S_Block::AttrType &attr, const S_DeclareList &decls) {
     decls.attr.start_index = static_cast<int>(attr.local_info.size());
     for (const auto &pair : decls.decls) {
-        auto it = attr.name_to_local_index.find(pair.name);
-        if (it != attr.name_to_local_index.end()) {
-            throw DuplicatedLocalName("Duplicated local name: " + u8_encode(pair.name));
-        }
-
-        attr.name_to_local_index.emplace(pair.name, attr.local_info.size());
-        attr.local_info.emplace_back(pair.name);
+        add_name_to_block_attr(attr, pair.name);
     }
 }
 
@@ -51,13 +56,6 @@ public:
 
     virtual void visit_block(S_Block &block) {
         auto _ = this->enter(block);
-
-        for (Node::Ptr &stmt : block.stmts) {
-            if (S_DeclareList *decls = dynamic_cast<S_DeclareList *>(stmt.get())) {
-                add_declarations_to_block_attr(block.attr, *decls);
-            }
-        }
-
         for (Node::Ptr &stmt : block.stmts) {
             stmt->accept(*this);
         }
@@ -68,7 +66,11 @@ public:
     }
 
     virtual void visit_declare_list(S_DeclareList &decls) {
+        S_Block::AttrType &attr = this->cur_block->attr;
+        decls.attr.start_index = static_cast<int>(attr.local_info.size());
+
         for (const auto &pair : decls.decls) {
+            add_name_to_block_attr(attr, pair.name);
             if (pair.initial) {
                 pair.initial->accept(*this);
             }
@@ -121,8 +123,14 @@ public:
         S_Block &func_block = static_cast<S_Block &>(*func.block);
 
         if (func.args) {
+            // resovle default arguments in outter scope
+            for (const auto &pair : static_cast<S_DeclareList &>(*func.args).decls) {
+                if (pair.initial) {
+                    pair.initial->accept(*this);
+                }
+            }
+            // add arguments as locals of function block
             auto _ = this->enter(func_block);
-            func.args->accept(*this);
             add_declarations_to_block_attr(
                 func_block.attr, static_cast<S_DeclareList &>(*func.args)
             );
@@ -148,9 +156,6 @@ private:
 
 
 void resolve_names_in_block(S_Block &block, Node &node) {
-    if (S_DeclareList *decls = dynamic_cast<S_DeclareList *>(&node)) {
-        add_declarations_to_block_attr(block.attr, *decls);
-    }
     Resolver res(&block);
     node.accept(res);
 }

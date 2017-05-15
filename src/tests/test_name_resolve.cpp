@@ -239,3 +239,28 @@ TEST_CASE("Test name resolve misc") {
         CHECK(vx->attr.index == index++);
     }
 }
+
+
+TEST_CASE("Test use before declare") {
+    std::vector<Node::Ptr> g;
+
+    S_Block *block = make_block({
+        make_decl_list({
+            {"a", V("b")},
+            {"b", T(1)},
+        }),
+    });
+    g.emplace_back(block);
+
+    CHECK_THROWS_AS(resolve_names(*block), NoSuchName);
+
+    block = make_block({
+        make_s_exp(V("a")),
+        make_decl_list({
+            {"a", T(1)},
+        }),
+    });
+    g.emplace_back(block);
+
+    CHECK_THROWS_AS(resolve_names(*block), NoSuchName);
+}
