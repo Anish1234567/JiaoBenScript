@@ -63,7 +63,7 @@ S_DeclareList *make_decl_list(const std::vector<std::pair<std::string, Node *>> 
 }
 
 
-S_Block *make_block(const std::vector<Node *> stmts) {
+S_Block *make_block(const std::vector<Node *> &stmts) {
     S_Block *block = new S_Block();
     for (Node *stmt : stmts) {
         block->stmts.emplace_back(stmt);
