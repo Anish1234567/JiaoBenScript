@@ -249,30 +249,6 @@ struct _E_Value : Node {
 };
 
 
-template<class T>
-inline std::string _my_to_string(const T &value) {
-    return std::to_string(value);
-}
-
-
-template<>
-inline std::string _my_to_string<ustring>(const ustring &value) {
-    return u8_encode(value);
-}
-
-
-template<>
-inline std::string _my_to_string<bool>(const bool &value) {
-    return value ? "true" : "false";
-}
-
-
-template<class ValueType>
-inline std::string _E_Value<ValueType>::repr(uint32_t) const {
-    return _my_to_string(this->value);
-}
-
-
 typedef _E_Value<bool> E_Bool;
 typedef _E_Value<int64_t> E_Int;
 typedef _E_Value<double> E_Float;

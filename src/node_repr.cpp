@@ -193,3 +193,39 @@ std::string E_List::repr(uint32_t indent) const {
 std::string E_Null::repr(uint32_t) const {
     return "null";
 }
+
+
+template<class T>
+std::string _my_to_string(const T &value) {
+    return std::to_string(value);
+}
+
+
+template<>
+std::string _my_to_string<ustring>(const ustring &value) {
+    return u8_encode(value);
+}
+
+
+template<>
+std::string _my_to_string<bool>(const bool &value) {
+    return value ? "true" : "false";
+}
+
+
+template<class ValueType>
+std::string _E_Value<ValueType>::repr(uint32_t) const {
+    return _my_to_string(this->value);
+}
+
+
+// explicit instantiation
+
+template
+std::string E_Bool::repr(uint32_t) const;
+template
+std::string E_Int::repr(uint32_t) const;
+template
+std::string E_Float::repr(uint32_t) const;
+template
+std::string E_String::repr(uint32_t) const;
