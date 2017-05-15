@@ -6,13 +6,10 @@
 #include "exceptions.h"
 
 
-#define CAST(Type) Type *obj = dynamic_cast<Type *>(&lhs)
-
-
 JBValue &Builtins::builtin_pos(JBValue &lhs) {
-    if (CAST(JBInt)) {
+    if (dynamic_cast<JBInt *>(&lhs)) {
         return lhs;
-    } else if (CAST(JBFloat)) {
+    } else if (dynamic_cast<JBFloat *>(&lhs)) {
         return lhs;
     } else {
         throw JBError("Type error: expect number");
@@ -21,10 +18,10 @@ JBValue &Builtins::builtin_pos(JBValue &lhs) {
 
 
 JBValue &Builtins::builtin_neg(JBValue &lhs) {
-    if (CAST(JBInt)) {
-        return this->create<JBInt>(-obj->value);
-    } else if (CAST(JBFloat)) {
-        return this->create<JBFloat>(-obj->value);
+    if (JBInt *int_obj = dynamic_cast<JBInt *>(&lhs)) {
+        return this->create<JBInt>(-int_obj->value);
+    } else if (JBFloat *float_obj = dynamic_cast<JBFloat *>(&lhs)) {
+        return this->create<JBFloat>(-float_obj->value);
     } else {
         throw JBError("Type error: expect number");
     }
@@ -32,10 +29,10 @@ JBValue &Builtins::builtin_neg(JBValue &lhs) {
 
 
 static double jb_value_to_double(JBValue &lhs) {
-    if (CAST(JBInt)) {
-        return obj->value;
-    } else if (CAST(JBFloat)) {
-        return obj->value;
+    if (JBInt *int_obj = dynamic_cast<JBInt *>(&lhs)) {
+        return int_obj->value;
+    } else if (JBFloat *float_obj = dynamic_cast<JBFloat *>(&lhs)) {
+        return float_obj->value;
     } else {
         throw JBError("Type error: expect number");
     }
@@ -118,12 +115,13 @@ JBValue &Builtins::builtin_##name(JBValue &lhs, JBValue &rhs) { \
         jb_value_to_double(lhs) OP jb_value_to_double(rhs)); \
 }
 
-
 // TODO: string comparison
 CMP_IMPL(lt, <)
 CMP_IMPL(le, <=)
 CMP_IMPL(gt, >)
 CMP_IMPL(ge, >=)
+
+#undef CMP_IMPL
 
 
 JBValue &Builtins::builtin_eq(JBValue &lhs, JBValue &rhs) {
@@ -180,7 +178,3 @@ JBValue &Builtins::builtin_setitem(JBValue &base, JBValue &offset, JBValue &valu
 JBValue &Builtins::builtin_getitem(JBValue &base, JBValue &offset) {
     return **getitem(base, offset);
 }
-
-
-#undef CAST
-#undef CMP_IMPL
