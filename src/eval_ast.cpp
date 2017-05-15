@@ -211,7 +211,7 @@ void AstInterpreter::visit_var(E_Var &var) {
     if (JBValue *value = *this->resolve_var(var)) {
         this->return_value(*value);
     } else {
-        throw JBError("Unbound variable: " + u8_encode(var.name));
+        throw JBError("Unbound variable: " + u8_encode(var.name), var.pos_start, var.pos_end);
     }
 }
 
@@ -413,8 +413,8 @@ void AstInterpreter::handle_binop_assign(E_Op &exp, AstInterpreter::BinaryFunc b
 void AstInterpreter::handle_call(E_Op &call) {
     assert(call.op_code == OpCode::CALL);
     assert(call.args.size() == 2);
-    JBValue &lhs = this->eval_exp(*call.args[0]);
-    if (JBFunc *func = dynamic_cast<JBFunc *>(&lhs)) {
+    Node &lhs = *call.args[0];
+    if (JBFunc *func = dynamic_cast<JBFunc *>(&this->eval_exp(lhs))) {
         E_Op &supplied = static_cast<E_Op &>(*call.args[1]);
         S_DeclareList *decl_list = nullptr;
         if (func->code.args) {
@@ -424,14 +424,16 @@ void AstInterpreter::handle_call(E_Op &call) {
         // check number of argument
         size_t func_max_args = decl_list ? decl_list->decls.size() : 0;
         if (supplied.args.size() > func_max_args) {
+            // TODO: mark missing args
             throw JBError(string_fmt(
                 "Bad call: too many args, expect %zu, got %zu",
                 func_max_args, supplied.args.size()
-            ));
+            ), supplied.pos_start, supplied.pos_end);
         }
         if (supplied.args.size() < func_max_args) {
             if (!decl_list->decls[supplied.args.size()].initial) {
-                throw JBError("Bad Call: missing args");
+                // TODO: mark extra args
+                throw JBError("Bad Call: missing args", supplied.pos_start, supplied.pos_end);
             }
         }
 
@@ -456,7 +458,7 @@ void AstInterpreter::handle_call(E_Op &call) {
         // execute function
         this->handle_func_body(func_block);
     } else {
-        throw JBError("Bad call: not a function");
+        throw JBError("Bad call: not a function", lhs.pos_start, lhs.pos_end);
     }
 }
 

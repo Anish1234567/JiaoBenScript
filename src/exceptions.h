@@ -14,13 +14,13 @@ class BaseException : public std::runtime_error {
 public:
     explicit BaseException(
         const std::string &msg,
-        const SourcePos &start = SourcePos(), const SourcePos &end = SourcePos()
+        const SourcePos &pos_start = SourcePos(), const SourcePos &pos_end = SourcePos()
     )
-        : std::runtime_error(msg), start(start), end(end)
+        : std::runtime_error(msg), pos_start(pos_start), pos_end(pos_end)
     {}
 
-    SourcePos start;
-    SourcePos end;
+    SourcePos pos_start;
+    SourcePos pos_end;
 };
 
 

@@ -6,6 +6,9 @@
 #include "exceptions.h"
 
 
+// TODO: merge this module into eval_ast for better error handling
+
+
 JBValue &Builtins::builtin_pos(JBValue &lhs) {
     if (dynamic_cast<JBInt *>(&lhs)) {
         return lhs;

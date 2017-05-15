@@ -9,6 +9,7 @@
 static void add_name_to_block_attr(S_Block::AttrType &attr, const ustring &name) {
     auto it = attr.name_to_local_index.find(name);
     if (it != attr.name_to_local_index.end()) {
+        // FIXME: set lineno
         throw DuplicatedLocalName("Duplicated local name: " + u8_encode(name));
     }
 
@@ -33,6 +34,7 @@ S_Block::AttrType::NonLocalInfo resolve_from_block(S_Block *block, const ustring
         }
     }
 
+    // FIXME: set lineno
     throw NoSuchName("No such name: " + u8_encode(name));
 }
 
