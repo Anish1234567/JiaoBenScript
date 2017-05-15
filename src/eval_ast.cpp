@@ -9,6 +9,22 @@
 #include "string_fmt.hpp"
 
 
+struct Signal {};
+
+
+class BreakSignal : public Signal {};
+
+
+class ContinueSignal : public Signal {};
+
+
+class ReturnSignal : public Signal {
+public:
+    ReturnSignal(JBValue &value) : value(value) {}
+    JBValue &value;
+};
+
+
 void Frame::each_ref(std::function<void(JBObject &child)> callback) {
     for (JBObject *v : this->vars) {
         if (v != nullptr) {

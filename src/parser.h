@@ -1,7 +1,6 @@
 #ifndef JIAOBENSCRIPT_PARSER_H
 #define JIAOBENSCRIPT_PARSER_H
 
-#include <cstring>
 #include <initializer_list>
 #include <vector>
 
@@ -20,10 +19,6 @@ public:
 
 private:
     typedef void (Parser::* StateHandler)(const Token &);
-    std::vector<StateHandler> states;
-    std::vector<Node::Ptr> nodes;
-
-private:
     void state_END(const Token &tok);
     void state_PROGRAM_OR_EXP(const Token &tok);
     void state_PROGRAM(const Token &tok);
@@ -132,26 +127,16 @@ private:
     template<class TokenType, class NodeType>
     void do_const(const Token &tok);
 
-    void unpected_token(const Token &tok, const std::string &addtional = "");
+    template<class NodeType>
+    NodeType *get_top1();
 
     template<class NodeType>
-    NodeType *get_top1() {
-        assert(!this->nodes.empty());
-        return static_cast<NodeType *>(this->nodes.back().get());
-    }
-
-    template<class NodeType>
-    NodeType *get_top2() {
-        assert(this->nodes.size() >= 2);
-        return static_cast<NodeType *>((++this->nodes.rbegin())->get());
-    }
+    NodeType *get_top2();
 
     template<class NodeType = Node>
-    NodeType *pop_top() {
-        NodeType *top = this->nodes.back().release();
-        this->nodes.pop_back();
-        return top;
-    }
+    NodeType *pop_top();
+
+    void unpected_token(const Token &tok, const std::string &addtional = "");
 
     void set_pos_start(const Token &tok);
     void set_pos_start(const Node &node);
@@ -162,24 +147,16 @@ private:
     static bool match_id(const Token &tok, const ustring &id);
 
     struct SortedState {
-        SortedState(std::initializer_list<StateHandler> states) : states(states) {
-            std::sort(this->states.begin(), this->states.end(), &SortedState::cmp);
-        }
-
-        bool contains(const StateHandler &state) const {
-            return std::binary_search(
-                this->states.begin(), this->states.end(), state, &SortedState::cmp
-            );
-        }
-
-        static bool cmp(const StateHandler &lhs, const StateHandler &rhs) {
-            return memcmp(&lhs, &rhs, sizeof(StateHandler)) < 0;
-        }
+        SortedState(std::initializer_list<StateHandler> states);
+        bool contains(const StateHandler &state) const;
+        static bool cmp(const StateHandler &lhs, const StateHandler &rhs);
 
         std::vector<StateHandler> states;
     };
 
     static SortedState terminating_states;
+    std::vector<StateHandler> states;
+    std::vector<Node::Ptr> nodes;
 };
 
 

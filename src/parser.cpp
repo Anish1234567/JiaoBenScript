@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cassert>
+#include <cstring>
 #include <utility>
 
 #include "parser.h"
@@ -31,6 +32,25 @@ bool Parser::can_end() const {
         }
     }
     return true;
+}
+
+
+Parser::SortedState::SortedState(std::initializer_list<Parser::StateHandler> states)
+    : states(states)
+{
+    std::sort(this->states.begin(), this->states.end(), &SortedState::cmp);
+}
+
+
+bool Parser::SortedState::contains(const Parser::StateHandler &state) const {
+    return std::binary_search(
+        this->states.begin(), this->states.end(), state, &SortedState::cmp
+    );
+}
+
+
+bool Parser::SortedState::cmp(const Parser::StateHandler &lhs, const Parser::StateHandler &rhs) {
+    return memcmp(&lhs, &rhs, sizeof(StateHandler)) < 0;
 }
 
 
@@ -1020,4 +1040,24 @@ void Parser::set_pos_end(const Node &node) {
 void Parser::set_pos_start_end(const Token &tok) {
     this->set_pos_start(tok);
     this->set_pos_end(tok);
+}
+
+
+template<class NodeType>
+NodeType *Parser::get_top1() {
+    assert(!this->nodes.empty());
+    return static_cast<NodeType *>(this->nodes.back().get());
+}
+
+template<class NodeType>
+NodeType *Parser::get_top2() {
+    assert(this->nodes.size() >= 2);
+    return static_cast<NodeType *>((++this->nodes.rbegin())->get());
+}
+
+template<class NodeType = Node>
+NodeType *Parser::pop_top() {
+    NodeType *top = this->nodes.back().release();
+    this->nodes.pop_back();
+    return top;
 }

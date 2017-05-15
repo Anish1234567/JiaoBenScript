@@ -14,22 +14,6 @@
 #include "replace_restore.hpp"
 
 
-struct Signal {};
-
-
-class BreakSignal : public Signal {};
-
-
-class ContinueSignal : public Signal {};
-
-
-class ReturnSignal : public Signal {
-public:
-    ReturnSignal(JBValue &value) : value(value) {}
-    JBValue &value;
-};
-
-
 class Frame : public JBObject {
 public:
     Frame *parent = nullptr;
