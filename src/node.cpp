@@ -1,4 +1,5 @@
 #include "node.h"
+#include "visitor.h"
 
 
 bool Node::operator==(const Node &rhs) const {
@@ -112,3 +113,102 @@ bool E_List::operator==(const Node &rhs) const {
 #undef _TO_OTHER
 #undef _ATTR_EQ
 #undef _ATTR_EQ_OPT
+
+
+void S_Block::accept(NodeVistor &vis) {
+    vis.visit_block(*this);
+}
+
+
+void S_DeclareList::accept(NodeVistor &vis) {
+    vis.visit_declare_list(*this);
+}
+
+
+void S_Condition::accept(NodeVistor &vis) {
+    vis.visit_condition(*this);
+}
+
+
+void S_While::accept(NodeVistor &vis) {
+    vis.visit_while(*this);
+}
+
+
+void S_Return::accept(NodeVistor &vis) {
+    vis.visit_return(*this);
+}
+
+
+void S_Exp::accept(NodeVistor &vis) {
+    vis.visit_stmt_exp(*this);
+}
+
+
+void E_Op::accept(NodeVistor &vis) {
+    vis.visit_op(*this);
+}
+
+
+void E_Var::accept(NodeVistor &vis) {
+    vis.visit_var(*this);
+}
+
+
+void E_Func::accept(NodeVistor &vis) {
+    vis.visit_func(*this);
+}
+
+
+void E_List::accept(NodeVistor &vis) {
+    vis.visit_list(*this);
+}
+
+
+void Program::accept(NodeVistor &vis) {
+    vis.visit_program(*this);
+}
+
+
+void S_Break::accept(NodeVistor &vis) {
+    vis.visit_break(*this);
+}
+
+
+void S_Continue::accept(NodeVistor &vis) {
+    vis.visit_continue(*this);
+}
+
+
+void S_Empty::accept(NodeVistor &vis) {
+    vis.visit_stmt_empty(*this);
+}
+
+
+template<>
+void E_Bool::accept(NodeVistor &vis) {
+    vis.visit_bool(*this);
+}
+
+
+template<>
+void E_Int::accept(NodeVistor &vis) {
+    vis.visit_int(*this);
+}
+
+
+template<>
+void E_Float::accept(NodeVistor &vis) {
+    vis.visit_float(*this);
+}
+
+
+template<>
+void E_String::accept(NodeVistor &vis) {
+    vis.visit_string(*this);
+}
+
+
+void E_Null::accept(NodeVistor &vis) {
+    vis.visit_null(*this);
+}

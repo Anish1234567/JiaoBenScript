@@ -117,7 +117,7 @@ TEST_CASE("Test declaration list default value") {
 
 
 TEST_CASE("Test name resovle function") {
-    E_Var *oc = V("c");
+    E_Var *ob = V("b");
 
     E_Var *fa = V("a");
     E_Var *fb = V("b");
@@ -125,7 +125,7 @@ TEST_CASE("Test name resovle function") {
     E_Func *func = make_func(
         make_decl_list({
             {"a", nullptr},
-            {"b", oc},
+            {"b", ob},
         }),
         make_block({
             make_return(make_binop('+', fa, make_binop('-', fb, fc))),
@@ -146,12 +146,13 @@ TEST_CASE("Test name resovle function") {
     S_Block &func_block = static_cast<S_Block &>(*func->block);
     CHECK(func_block.attr.local_info == make_local_info({"a", "b"}));
     CHECK(func_block.attr.nonlocal_indexes == make_nonlocal_indexes({
-        {outter, 2},
+        {outter, 1},    // b
+        {outter, 2},    // c
     }));
     CHECK(fa->attr.is_local);   CHECK(fa->attr.index == 0);
     CHECK(fb->attr.is_local);   CHECK(fb->attr.index == 1);
-    CHECK_FALSE(fc->attr.is_local);
-    CHECK(fc->attr.index == 0);
+    CHECK(!ob->attr.is_local);  CHECK(ob->attr.index == 0);
+    CHECK(!fc->attr.is_local);  CHECK(fc->attr.index == 1);
 }
 
 

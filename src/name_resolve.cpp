@@ -2,6 +2,7 @@
 #include <vector>
 
 #include "name_resolve.h"
+#include "visitor.h"
 #include "replace_restore.hpp"
 
 
@@ -50,19 +51,13 @@ static int add_nonlocal_to_block_attr(S_Block::AttrType &attr, const ustring &na
 }
 
 
-class Resolver : public NodeVistor {
+class Resolver : public TraversalNodeVisitor {
 public:
     Resolver(S_Block *cur_block) : cur_block(cur_block) {}
 
     virtual void visit_block(S_Block &block) {
         auto _ = this->enter(block);
-        for (Node::Ptr &stmt : block.stmts) {
-            stmt->accept(*this);
-        }
-    }
-
-    virtual void visit_program(Program &prog) {
-        this->visit_block(prog);
+        TraversalNodeVisitor::visit_block(block);
     }
 
     virtual void visit_declare_list(S_DeclareList &decls) {
@@ -74,35 +69,6 @@ public:
             if (pair.initial) {
                 pair.initial->accept(*this);
             }
-        }
-    }
-
-    virtual void visit_condition(S_Condition &cond) {
-        cond.condition->accept(*this);
-        cond.then_block->accept(*this);
-        if (cond.else_block) {
-            cond.else_block->accept(*this);
-        }
-    }
-
-    virtual void visit_while(S_While &wh) {
-        wh.condition->accept(*this);
-        wh.block->accept(*this);
-    }
-
-    virtual void visit_return(S_Return &ret) {
-        if (ret.value) {
-            ret.value->accept(*this);
-        }
-    }
-
-    virtual void visit_stmt_exp(S_Exp &stmt) {
-        stmt.value->accept(*this);
-    }
-
-    virtual void visit_op(E_Op &exp) {
-        for (Node::Ptr &arg : exp.args) {
-            arg->accept(*this);
         }
     }
 
@@ -123,26 +89,20 @@ public:
         S_Block &func_block = static_cast<S_Block &>(*func.block);
 
         if (func.args) {
-            // resovle default arguments in outter scope
+            // resovle default arguments in outter scope as non-locals
+            auto _ = this->enter(func_block);
             for (const auto &pair : static_cast<S_DeclareList &>(*func.args).decls) {
                 if (pair.initial) {
                     pair.initial->accept(*this);
                 }
             }
             // add arguments as locals of function block
-            auto _ = this->enter(func_block);
             add_declarations_to_block_attr(
                 func_block.attr, static_cast<S_DeclareList &>(*func.args)
             );
         }
 
         func_block.accept(*this);
-    }
-
-    virtual void visit_list(E_List &list) {
-        for (Node::Ptr &item : list.value) {
-            item->accept(*this);
-        }
     }
 
 private:

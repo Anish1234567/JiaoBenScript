@@ -10,6 +10,7 @@
 #include "builtins.h"
 #include "jbobject.h"
 #include "node.h"
+#include "visitor.h"
 #include "replace_restore.hpp"
 
 
