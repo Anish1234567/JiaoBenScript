@@ -119,8 +119,8 @@ private:
 };
 
 
-void resolve_names_in_block(S_Block &block, Node &node) {
-    Resolver(&block).resolve(node);
+void resolve_names_in_block(S_Block *block, Node &node) {
+    Resolver(block).resolve(node);
 }
 
 

@@ -15,7 +15,7 @@ class NoSuchName : public CompileError {
 };
 
 
-void resolve_names_in_block(S_Block &block, Node &node);
+void resolve_names_in_block(S_Block *block, Node &node);
 void resolve_names(S_Block &block);
 
 

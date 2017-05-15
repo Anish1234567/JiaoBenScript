@@ -7,7 +7,7 @@
 #include "node.h"
 
 
-void check_control_flow(S_Block &block);
+void check_control_flow(Node &node);
 
 
 #endif //JIAOBENSCRIPT_CHECK_CONTROL_FLOW_H

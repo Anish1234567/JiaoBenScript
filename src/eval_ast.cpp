@@ -5,6 +5,7 @@
 #include "builtins.h"
 #include "eval_ast.h"
 #include "name_resolve.h"
+#include "check_control_flow.h"
 #include "string_fmt.hpp"
 
 
@@ -22,14 +23,14 @@ void Frame::each_ref(std::function<void(JBObject &child)> callback) {
 
 void AstInterpreter::eval_incomplete_raw_block(S_Block &block) {
     assert(this->cur_frame == nullptr);
-    ::resolve_names(block);
+    this->analyze_node(block);
     this->cur_frame = &this->create_frame(nullptr, block);
     this->handle_block(block);
 }
 
 
 void AstInterpreter::eval_raw_decl_list(S_DeclareList &decls) {
-    this->resolve_names_current_block(decls);
+    this->analyze_node(decls);
     assert(this->cur_frame);
     Frame &frame = *this->cur_frame;
     // extend frame.vars
@@ -42,7 +43,7 @@ void AstInterpreter::eval_raw_decl_list(S_DeclareList &decls) {
 
 
 JBValue& AstInterpreter::eval_raw_exp(Node &exp) {
-    this->resolve_names_current_block(exp);
+    this->analyze_node(exp);
     JBValue &ret = this->eval_exp(exp);
     return ret;
 }
@@ -51,14 +52,8 @@ JBValue& AstInterpreter::eval_raw_exp(Node &exp) {
 void AstInterpreter::eval_raw_stmt(Node &node) {
     if (S_DeclareList *decls = dynamic_cast<S_DeclareList *>(&node)) {
         this->eval_raw_decl_list(*decls);
-    } else if (S_Return *ret = dynamic_cast<S_Return *>(&node)) {
-        throw BadReturn(*ret);
-    } else if (S_Break *brk = dynamic_cast<S_Break *>(&node)) {
-        throw BadBreak(*brk);
-    } else if (S_Continue *cont = dynamic_cast<S_Continue *>(&node)) {
-        throw BadContinue(*cont);
     } else {
-        this->resolve_names_current_block(node);
+        this->analyze_node(node);
         node.accept(*this);
     }
 }
@@ -236,13 +231,11 @@ void AstInterpreter::visit_bool(E_Bool &bool_node) {
 
 void AstInterpreter::visit_int(E_Int &int_node) {
     this->return_value(this->create<JBInt>(int_node.value));
-
 }
 
 
 void AstInterpreter::visit_float(E_Float &float_node) {
     this->return_value(this->create<JBFloat>(float_node.value));
-
 }
 
 
@@ -314,10 +307,14 @@ JBValue **AstInterpreter::resolve_var(const E_Var &var) {
 }
 
 
-void AstInterpreter::resolve_names_current_block(Node &node) {
-    assert(this->cur_frame);
-    assert(this->cur_frame->block);
-    ::resolve_names_in_block(*this->cur_frame->block, node);
+void AstInterpreter::analyze_node(Node &node) {
+    if (this->cur_frame) {
+        assert(this->cur_frame->block);
+    }
+
+    S_Block *block = this->cur_frame ? this->cur_frame->block : nullptr;
+    ::resolve_names_in_block(block, node);
+    ::check_control_flow(node);
 }
 
 

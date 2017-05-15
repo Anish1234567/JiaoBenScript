@@ -5,7 +5,7 @@
 
 class CFChecker : private TraversalNodeVisitor {
 public:
-    void check(S_Block &block) {
+    void check(Node &block) {
         block.accept(*this);
     }
 
@@ -45,6 +45,6 @@ private:
 };
 
 
-void check_control_flow(S_Block &block) {
-    CFChecker().check(block);
+void check_control_flow(Node &node) {
+    CFChecker().check(node);
 }

@@ -2,8 +2,8 @@
 #include <vector>
 #include "catch.hpp"
 
+#include "../exceptions.h"
 #include "../eval_ast.h"
-#include "../node.h"
 #include "../unicode.h"
 #include "helper_node.hpp"
 
@@ -16,7 +16,7 @@
     } while (0)
 
 
-TEST_CASE("Test basic") {
+TEST_CASE("Test AstInterpreter") {
     std::vector<Node::Ptr> g;
     AstInterpreter interp;
 
@@ -46,6 +46,11 @@ TEST_CASE("Test basic") {
     auto eval_exp = [&](Node *exp) {
         g.emplace_back(exp);
         interp.eval_raw_exp(*exp);
+    };
+
+    auto eval_stmt = [&](Node *stmt) {
+        g.emplace_back(stmt);
+        interp.eval_raw_stmt(*stmt);
     };
 
     JBInt zero(0);
@@ -210,6 +215,15 @@ TEST_CASE("Test basic") {
         );
         CHECK_THROWS_AS(eval_exp(make_binop('[]', V("L"), V("negone"))), JBError);
         CHECK_THROWS_AS(eval_exp(make_binop('[]', V("x"), V("zero"))), JBError);
+    }
+
+    SECTION("Bad stmt") {
+        CHECK_THROWS_AS(eval_exp(make_func(
+            nullptr, make_block({ new S_Break() }))),
+            BadBreak
+        );
+        CHECK_THROWS_AS(eval_stmt(make_return(T(1))), BadReturn);
+        CHECK_THROWS_AS(eval_stmt(make_block({ make_return(T(1)) })), BadReturn);
     }
 }
 

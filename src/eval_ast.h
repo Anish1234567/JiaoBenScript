@@ -80,7 +80,7 @@ private:
     ReplaceRestore<Frame *> enter(S_Block &block, Frame *parent_frame = nullptr);
     JBValue &eval_exp(Node &node);
     JBValue **resolve_var(const E_Var &var);
-    void resolve_names_current_block(Node &node);
+    void analyze_node(Node &node);
 
     using UnaryFunc = std::function<JBValue &(JBValue &)>;
     using BinaryFunc = std::function<JBValue &(JBValue &, JBValue &)>;
