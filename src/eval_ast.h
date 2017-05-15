@@ -40,7 +40,7 @@ public:
 };
 
 
-class AstInterpreter : public NodeVistor {
+class AstInterpreter : public NodeVisitor {
 public:
     AstInterpreter() : allocator(), builtins(allocator) {}
 

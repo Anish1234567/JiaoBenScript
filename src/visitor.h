@@ -4,9 +4,9 @@
 #include "node.h"
 
 
-class NodeVistor {
+class NodeVisitor {
 public:
-    virtual ~NodeVistor() {}
+    virtual ~NodeVisitor() {}
 
     virtual void visit_block(S_Block &) {}
     virtual void visit_program(Program &) {}
@@ -30,7 +30,7 @@ public:
 };
 
 
-class TraversalNodeVisitor : public NodeVistor {
+class TraversalNodeVisitor : public NodeVisitor {
 public:
     virtual void visit_block(S_Block &block);
     virtual void visit_program(Program &prog);

@@ -115,100 +115,100 @@ bool E_List::operator==(const Node &rhs) const {
 #undef _ATTR_EQ_OPT
 
 
-void S_Block::accept(NodeVistor &vis) {
+void S_Block::accept(NodeVisitor &vis) {
     vis.visit_block(*this);
 }
 
 
-void S_DeclareList::accept(NodeVistor &vis) {
+void S_DeclareList::accept(NodeVisitor &vis) {
     vis.visit_declare_list(*this);
 }
 
 
-void S_Condition::accept(NodeVistor &vis) {
+void S_Condition::accept(NodeVisitor &vis) {
     vis.visit_condition(*this);
 }
 
 
-void S_While::accept(NodeVistor &vis) {
+void S_While::accept(NodeVisitor &vis) {
     vis.visit_while(*this);
 }
 
 
-void S_Return::accept(NodeVistor &vis) {
+void S_Return::accept(NodeVisitor &vis) {
     vis.visit_return(*this);
 }
 
 
-void S_Exp::accept(NodeVistor &vis) {
+void S_Exp::accept(NodeVisitor &vis) {
     vis.visit_stmt_exp(*this);
 }
 
 
-void E_Op::accept(NodeVistor &vis) {
+void E_Op::accept(NodeVisitor &vis) {
     vis.visit_op(*this);
 }
 
 
-void E_Var::accept(NodeVistor &vis) {
+void E_Var::accept(NodeVisitor &vis) {
     vis.visit_var(*this);
 }
 
 
-void E_Func::accept(NodeVistor &vis) {
+void E_Func::accept(NodeVisitor &vis) {
     vis.visit_func(*this);
 }
 
 
-void E_List::accept(NodeVistor &vis) {
+void E_List::accept(NodeVisitor &vis) {
     vis.visit_list(*this);
 }
 
 
-void Program::accept(NodeVistor &vis) {
+void Program::accept(NodeVisitor &vis) {
     vis.visit_program(*this);
 }
 
 
-void S_Break::accept(NodeVistor &vis) {
+void S_Break::accept(NodeVisitor &vis) {
     vis.visit_break(*this);
 }
 
 
-void S_Continue::accept(NodeVistor &vis) {
+void S_Continue::accept(NodeVisitor &vis) {
     vis.visit_continue(*this);
 }
 
 
-void S_Empty::accept(NodeVistor &vis) {
+void S_Empty::accept(NodeVisitor &vis) {
     vis.visit_stmt_empty(*this);
 }
 
 
 template<>
-void E_Bool::accept(NodeVistor &vis) {
+void E_Bool::accept(NodeVisitor &vis) {
     vis.visit_bool(*this);
 }
 
 
 template<>
-void E_Int::accept(NodeVistor &vis) {
+void E_Int::accept(NodeVisitor &vis) {
     vis.visit_int(*this);
 }
 
 
 template<>
-void E_Float::accept(NodeVistor &vis) {
+void E_Float::accept(NodeVisitor &vis) {
     vis.visit_float(*this);
 }
 
 
 template<>
-void E_String::accept(NodeVistor &vis) {
+void E_String::accept(NodeVisitor &vis) {
     vis.visit_string(*this);
 }
 
 
-void E_Null::accept(NodeVistor &vis) {
+void E_Null::accept(NodeVisitor &vis) {
     vis.visit_null(*this);
 }
