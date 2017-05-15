@@ -51,10 +51,15 @@ static int add_nonlocal_to_block_attr(S_Block::AttrType &attr, const ustring &na
 }
 
 
-class Resolver : public TraversalNodeVisitor {
+class Resolver : private TraversalNodeVisitor {
 public:
     Resolver(S_Block *cur_block) : cur_block(cur_block) {}
 
+    void resolve(Node &node) {
+        node.accept(*this);
+    }
+
+private:
     virtual void visit_block(S_Block &block) {
         auto _ = this->enter(block);
         TraversalNodeVisitor::visit_block(block);
@@ -105,7 +110,6 @@ public:
         func_block.accept(*this);
     }
 
-private:
     ReplaceRestore<S_Block *> enter(S_Block &block) {
         block.attr.parent = this->cur_block;
         return ReplaceRestore<S_Block *>(&this->cur_block, &block);
@@ -116,11 +120,10 @@ private:
 
 
 void resolve_names_in_block(S_Block &block, Node &node) {
-    Resolver res(&block);
-    node.accept(res);
+    Resolver(&block).resolve(node);
 }
 
 
 void resolve_names(S_Block &block) {
-    Resolver(nullptr).visit_block(block);
+    Resolver(nullptr).resolve(block);
 }

@@ -3,8 +3,13 @@
 #include "replace_restore.hpp"
 
 
-class CFChecker : public TraversalNodeVisitor {
+class CFChecker : private TraversalNodeVisitor {
 public:
+    void check(S_Block &block) {
+        block.accept(*this);
+    }
+
+private:
     virtual void visit_while(S_While &wh) {
         ReplaceRestore<bool> _(&this->inside_loop, true);
         TraversalNodeVisitor::visit_while(wh);
@@ -35,12 +40,11 @@ public:
         }
     }
 
-private:
     bool inside_func = false;
     bool inside_loop = false;
 };
 
 
 void check_control_flow(S_Block &block) {
-    CFChecker().visit_block(block);
+    CFChecker().check(block);
 }

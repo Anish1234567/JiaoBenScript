@@ -40,7 +40,7 @@ public:
 };
 
 
-class AstInterpreter : public NodeVisitor {
+class AstInterpreter : private NodeVisitor {
 public:
     AstInterpreter() : allocator(), builtins(allocator) {}
 
@@ -49,6 +49,7 @@ public:
     JBValue &eval_raw_exp(Node &exp);
     void eval_raw_stmt(Node &node);
 
+private:
     virtual void visit_block(S_Block &block);
     virtual void visit_program(Program &prog);
     virtual void visit_declare_list(S_DeclareList &decls);
@@ -69,7 +70,6 @@ public:
     virtual void visit_list(E_List &list);
     virtual void visit_null(E_Null &nil);
 
-private:
     template<class T, class ...Args>
     T &create(Args &&...args) {
         return *this->allocator.construct<T>(std::forward<Args>(args)...);
