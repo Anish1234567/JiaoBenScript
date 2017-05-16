@@ -631,6 +631,12 @@ void Parser::state_EXP_SUBS_RSQ(const Token & tok) {
 
 void Parser::state_EXP_CALL_AFTER_LPAR(const Token & tok) {
     if (tok.tokencode == TokenCode::RPAR) {
+        // add an empty argument list
+        E_Op *call = this->get_top1<E_Op>();
+        assert(call->op_code == OpCode::CALL);
+        assert(call->args.size() == 1);
+        call->args.emplace_back(new E_Op(OpCode::EXPLIST));
+
         this->set_pos_end(tok);
         this->shift(&Parser::state_EXP_CALL_OR_SUBS);
     } else {
