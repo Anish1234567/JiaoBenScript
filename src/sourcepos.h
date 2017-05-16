@@ -24,14 +24,9 @@ struct SourcePos {
 };
 
 
-class LineTracer {
-public:
-    LineTracer(SourcePos &pos) : pos(pos) {}
-
+struct TracableSourcePos : SourcePos {
     void add_char(unsigned int ch);
 
-private:
-    SourcePos &pos;
     bool last_newline = true;
 };
 

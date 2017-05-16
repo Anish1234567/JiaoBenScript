@@ -40,6 +40,11 @@ bool Parser::can_end() const {
 }
 
 
+void Parser::reset() {
+    *this = Parser();
+}
+
+
 Parser::SortedState::SortedState(std::initializer_list<Parser::StateHandler> states)
     : states(states)
 {

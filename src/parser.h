@@ -17,6 +17,7 @@ public:
     bool can_end() const;
     void feed(const Token &tok);
     Node::Ptr pop_result();
+    void reset();
 
 private:
     typedef void (Parser::* StateHandler)(const Token &);
