@@ -29,7 +29,7 @@ public:
     bool is_truthy(JBValue &value);
     JBValue &builtin_setitem(JBValue &base, JBValue &offset, JBValue &value);
     JBValue &builtin_getitem(JBValue &base, JBValue &offset);
-    void buildtin_print(const std::vector<JBValue *> &args);
+    JBValue &builtin_print(const std::vector<JBValue *> &args);
 
 private:
     // FIXME: duplicated code

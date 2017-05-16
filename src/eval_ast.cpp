@@ -51,8 +51,18 @@ void AstInterpreter::set_builtin_table(const std::vector<std::pair<ustring, JBVa
     this->analyze_node(*block);
     this->cur_frame = &this->create_frame(nullptr, *block);
     for (size_t i = 0; i < table.size(); ++i) {
+        assert(table[i].second);
         this->cur_frame->vars[i] = table[i].second;
     }
+}
+
+
+void AstInterpreter::set_default_builtin_table() {
+    using namespace std::placeholders;
+    this->set_builtin_table(std::vector<std::pair<ustring, JBValue *>> {
+        {USTRING("print"), &this->create<JBBuiltinFunc>(
+            std::bind(&Builtins::builtin_print, &this->builtins, _1))},
+    });
 }
 
 
@@ -492,6 +502,14 @@ void AstInterpreter::handle_call(E_Op &call) {
 
         // execute function
         this->handle_func_body(func_block);
+    } else if (JBBuiltinFunc *builtin_func = dynamic_cast<JBBuiltinFunc *>(&this->eval_exp(lhs))) {
+        E_Op &supplied = static_cast<E_Op &>(*call.args[1]);
+        std::vector<JBValue *> args;
+        for (Node::Ptr &item : supplied.args) {
+            args.push_back(&this->eval_exp(*item));
+        }
+
+        this->return_value(builtin_func->func(args));
     } else {
         throw JBError("Bad call: not a function", lhs.pos_start, lhs.pos_end);
     }

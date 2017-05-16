@@ -232,7 +232,6 @@ TEST_CASE("Test AstInterpreter") {
 
 TEST_CASE("Test set_builtin_table") {
     AstInterpreter interp;
-    std::vector<Node::Ptr> g;
 
     JBInt one(1);
     interp.set_builtin_table({
@@ -240,6 +239,16 @@ TEST_CASE("Test set_builtin_table") {
     });
 
     E_Var *v = V("one");
-    g.emplace_back(v);
+    Node::Ptr _(v);
     CHECK(interp.eval_raw_exp(*v) == one);
+}
+
+
+TEST_CASE("Test default builtin table") {
+    AstInterpreter interp;
+    interp.set_default_builtin_table();
+
+    E_Op *call = make_call(V("print"), {T(1), T(2)});
+    Node::Ptr _(call);
+    CHECK(interp.eval_raw_exp(*call) == JBNull());
 }

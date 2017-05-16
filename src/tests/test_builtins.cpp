@@ -86,6 +86,6 @@ TEST_CASE("Test builtins") {
     }
 
     SECTION("print") {
-        b.buildtin_print({&one, &two, &negone, &list});
+        b.builtin_print({&one, &two, &negone, &list});
     }
 }

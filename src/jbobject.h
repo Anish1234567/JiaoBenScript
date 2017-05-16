@@ -110,4 +110,17 @@ public:
 };
 
 
+class JBBuiltinFunc : public JBValue {
+public:
+    typedef std::function<JBValue &(const std::vector<JBValue *> &)> Func;
+
+    JBBuiltinFunc(Func func) : func(func) {}
+
+    virtual std::string repr() const override;
+    virtual bool operator==(const JBValue &rhs) const override;
+
+    Func func;
+};
+
+
 #endif //JIAOBENSCRIPT_JBOBJECT_H

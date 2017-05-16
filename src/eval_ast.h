@@ -29,6 +29,7 @@ public:
     AstInterpreter() : allocator(), builtins(allocator) {}
 
     void set_builtin_table(const std::vector<std::pair<ustring, JBValue *>> &table);
+    void set_default_builtin_table();
     void eval_incomplete_raw_block(S_Block &block);
     void eval_raw_decl_list(S_DeclareList &decls);
     JBValue &eval_raw_exp(Node &exp);

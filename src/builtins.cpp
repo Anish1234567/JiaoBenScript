@@ -184,11 +184,12 @@ JBValue &Builtins::builtin_getitem(JBValue &base, JBValue &offset) {
 }
 
 
-void Builtins::buildtin_print(const std::vector<JBValue *> &args) {
+JBValue &Builtins::builtin_print(const std::vector<JBValue *> &args) {
     const char *space = "";
     for (JBValue *item : args) {
         std::cout << space << item->repr();
         space = " ";
     }
     std::cout << std::endl;
+    return this->create<JBNull>();
 }

@@ -186,3 +186,14 @@ std::string JBFunc::repr() const {
 bool JBFunc::operator==(const JBValue &rhs) const {
     return this == &rhs;
 }
+
+
+std::string JBBuiltinFunc::repr() const {
+    // TODO: more info
+    return "<BuiltinFunc>";
+}
+
+
+bool JBBuiltinFunc::operator==(const JBValue &rhs) const {
+    return this == &rhs;
+}
