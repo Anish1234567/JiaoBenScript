@@ -16,6 +16,11 @@ void Parser::start_repl() {
 }
 
 
+bool Parser::is_empty() const {
+    return this->states.empty();
+}
+
+
 bool Parser::can_end() const {
     assert(!this->states.empty());
     assert(
@@ -114,7 +119,7 @@ Node::Ptr Parser::pop_result() {
     Node::Ptr ret = std::move(this->nodes.back());
     this->nodes.pop_back();
     this->states.pop_back();
-    return ret;
+    return ret;     // Program or expression
 }
 
 
@@ -1055,7 +1060,7 @@ NodeType *Parser::get_top2() {
     return static_cast<NodeType *>((++this->nodes.rbegin())->get());
 }
 
-template<class NodeType = Node>
+template<class NodeType>
 NodeType *Parser::pop_top() {
     NodeType *top = this->nodes.back().release();
     this->nodes.pop_back();

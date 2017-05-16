@@ -457,7 +457,7 @@ void AstInterpreter::handle_binop_assign(E_Op &exp, AstInterpreter::BinaryFunc b
 
 void AstInterpreter::handle_call(E_Op &call) {
     assert(call.op_code == OpCode::CALL);
-    assert(call.args.size() == 2);
+    assert(call.args.size() == 2);  // FIXME: call.args.size() maybe 1
     Node &lhs = *call.args[0];
     if (JBFunc *func = dynamic_cast<JBFunc *>(&this->eval_exp(lhs))) {
         E_Op &supplied = static_cast<E_Op &>(*call.args[1]);

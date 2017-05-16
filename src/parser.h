@@ -13,6 +13,7 @@ class Parser {
 public:
     void start_program();
     void start_repl();
+    bool is_empty() const;
     bool can_end() const;
     void feed(const Token &tok);
     Node::Ptr pop_result();
