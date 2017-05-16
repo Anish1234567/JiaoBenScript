@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <functional>
 #include <map>
+#include <string>
 #include <vector>
 
 #include "node.h"
@@ -21,6 +22,7 @@ class JBValue : public JBObject {
 public:
     virtual bool eq(const JBValue &rhs) const;
     virtual bool is_truthy() const;
+    virtual std::string repr() const = 0;
 
     virtual bool operator==(const JBValue &rhs) const = 0;
     bool operator!=(const JBValue &rhs) const {
@@ -37,6 +39,7 @@ public:
     virtual bool is_truthy() const override {
         return this->value != 0;
     }
+    virtual std::string repr() const override;
 
     virtual bool operator==(const JBValue &rhs) const override {
         const _JBSimpeValue<T> *other = dynamic_cast<const _JBSimpeValue<T> *>(&rhs);
@@ -57,6 +60,7 @@ public:
     explicit JBString(const ustring &value) : value(value) {}
 
     virtual bool is_truthy() const override;
+    virtual std::string repr() const override;
     virtual bool operator==(const JBValue &rhs) const override;
 
     const ustring value;
@@ -68,6 +72,7 @@ public:
     virtual bool is_truthy() const override {
         return false;
     }
+    virtual std::string repr() const override;
     virtual bool operator==(const JBValue &rhs) const override {
         return dynamic_cast<const JBNull *>(&rhs) != nullptr;
     }
@@ -79,6 +84,7 @@ public:
     virtual void each_ref(std::function<void (JBObject &)> callback);
 
     virtual bool is_truthy() const override;
+    virtual std::string repr() const override;
     virtual bool operator==(const JBValue &rhs) const override;
 
     std::vector<JBValue *> value;
@@ -94,11 +100,13 @@ public:
         : parent_frame(frame), code(code)
     {}
     virtual void each_ref(std::function<void (JBObject &)> callback);
+    virtual std::string repr() const override;
     virtual bool operator==(const JBValue &rhs) const override;
 
     Frame *parent_frame;    // optional if function do not have closure
                             // (func.block and its children do not have non-local variable)
     const E_Func &code;
+    // TODO: function name
 };
 
 

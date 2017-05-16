@@ -1,5 +1,6 @@
 #include <cmath>
 #include <functional>
+#include <iosfwd>
 #include <string>
 
 #include "builtins.h"
@@ -180,4 +181,14 @@ JBValue &Builtins::builtin_setitem(JBValue &base, JBValue &offset, JBValue &valu
 
 JBValue &Builtins::builtin_getitem(JBValue &base, JBValue &offset) {
     return **getitem(base, offset);
+}
+
+
+void Builtins::buildtin_print(const std::vector<JBValue *> &args) {
+    const char *space = "";
+    for (JBValue *item : args) {
+        std::cout << space << item->repr();
+        space = " ";
+    }
+    std::cout << std::endl;
 }

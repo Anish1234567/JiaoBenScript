@@ -84,4 +84,8 @@ TEST_CASE("Test builtins") {
         CHECK_THROWS_AS(b.builtin_setitem(list, three, three), JBError);
         CHECK_THROWS_AS(b.builtin_setitem(list, negone, three), JBError);
     }
+
+    SECTION("print") {
+        b.buildtin_print({&one, &two, &negone, &list});
+    }
 }

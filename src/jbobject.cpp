@@ -2,6 +2,8 @@
 
 #include "jbobject.h"
 #include "eval_ast.h"
+#include "unicode.h"
+#include "string_fmt.hpp"
 
 
 bool JBValue::eq(const JBValue &rhs) const {
@@ -33,9 +35,21 @@ bool JBInt::eq(const JBValue &rhs) const {
 
 
 template<>
+std::string JBInt::repr() const {
+    return std::to_string(this->value);
+}
+
+
+template<>
 bool JBFloat::eq(const JBValue &rhs) const {
     auto result = to_double(rhs);
     return result.first && this->value == result.second;
+}
+
+
+template<>
+std::string JBFloat::repr() const {
+    return std::to_string(this->value);
 }
 
 
@@ -55,8 +69,49 @@ bool JBBool::eq(const JBValue &rhs) const {
 }
 
 
+template<>
+std::string JBBool::repr() const {
+    return this->value ? "true" : "false";
+}
+
+
 bool JBString::operator==(const JBValue &rhs) const {
     return value_eq(*this, rhs);
+}
+
+
+static std::string quote_char(unichar ch) {
+    if (ch == '"') {
+        return "\\\"";
+    } else if (ch == '\\') {
+        return "\\\\";
+    } else if (ch == '/') {
+        return "/";     // no escape
+    } else if (ch == '\b') {
+        return "\\b";
+    } else if (ch == '\f') {
+        return "\\f";
+    } else if (ch == '\n') {
+        return "\\n";
+    } else if (ch == '\t') {
+        return "\\t";
+    } else if (ch < 0x20) {
+        return string_fmt("\\u%04x", ch);
+    } else {
+        return u8_encode({ch});
+    }
+}
+
+
+std::string JBString::repr() const {
+    std::string ans;
+    ans.reserve(2 + this->value.size());
+    ans += "\"";
+    for (unichar ch : this->value) {
+        ans += quote_char(ch);
+    }
+    ans += "\"";
+    return ans;
 }
 
 
@@ -65,10 +120,31 @@ bool JBString::is_truthy() const {
 }
 
 
+std::string JBNull::repr() const {
+    return "null";
+}
+
+
 void JBList::each_ref(std::function<void(JBObject &)> callback) {
     for (JBValue *item : this->value) {
         callback(*item);
     }
+}
+
+
+std::string JBList::repr() const {
+    // TODO: break list into multiple line
+    std::string ans;
+    ans.reserve(this->value.size() * 2 + 1);
+    ans += "[";
+    const char *comma = "";
+    for (const JBValue *item : this->value) {
+        ans += comma;
+        comma = ", ";
+        ans += item->repr();
+    }
+    ans += "]";
+    return ans;
 }
 
 
@@ -98,6 +174,12 @@ void JBFunc::each_ref(std::function<void(JBObject &)> callback) {
     for (Frame *frame = this->parent_frame; frame != nullptr; frame = frame->parent) {
         callback(*frame);
     }
+}
+
+
+std::string JBFunc::repr() const {
+    // TODO: more info
+    return "<Func>";
 }
 
 
