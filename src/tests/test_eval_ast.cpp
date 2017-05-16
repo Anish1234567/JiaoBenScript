@@ -225,7 +225,21 @@ TEST_CASE("Test AstInterpreter") {
         CHECK_THROWS_AS(eval_stmt(make_return(T(1))), BadReturn);
         CHECK_THROWS_AS(eval_stmt(make_block({ make_return(T(1)) })), BadReturn);
     }
+
+    // TODO: test and, or, explist
 }
 
 
-// TODO: test and, or, explist
+TEST_CASE("Test set_builtin_table") {
+    AstInterpreter interp;
+    std::vector<Node::Ptr> g;
+
+    JBInt one(1);
+    interp.set_builtin_table({
+        {USTRING("one"), &one},
+    });
+
+    E_Var *v = V("one");
+    g.emplace_back(v);
+    CHECK(interp.eval_raw_exp(*v) == one);
+}

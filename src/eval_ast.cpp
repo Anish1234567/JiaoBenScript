@@ -37,6 +37,25 @@ void Frame::each_ref(std::function<void(JBObject &child)> callback) {
 }
 
 
+void AstInterpreter::set_builtin_table(const std::vector<std::pair<ustring, JBValue *>> &table) {
+    assert(this->cur_frame == nullptr);
+
+    S_Block *block = new S_Block();
+    this->builtin_block.reset(block);
+    S_DeclareList *decls = new S_DeclareList();
+    for (const auto &pair : table) {
+        decls->decls.emplace_back(pair.first, Node::Ptr());
+    }
+    block->stmts.emplace_back(decls);
+
+    this->analyze_node(*block);
+    this->cur_frame = &this->create_frame(nullptr, *block);
+    for (size_t i = 0; i < table.size(); ++i) {
+        this->cur_frame->vars[i] = table[i].second;
+    }
+}
+
+
 void AstInterpreter::eval_incomplete_raw_block(S_Block &block) {
     assert(this->cur_frame == nullptr);
     this->analyze_node(block);

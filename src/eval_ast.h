@@ -28,6 +28,7 @@ class AstInterpreter : private NodeVisitor {
 public:
     AstInterpreter() : allocator(), builtins(allocator) {}
 
+    void set_builtin_table(const std::vector<std::pair<ustring, JBValue *>> &table);
     void eval_incomplete_raw_block(S_Block &block);
     void eval_raw_decl_list(S_DeclareList &decls);
     JBValue &eval_raw_exp(Node &exp);
@@ -88,6 +89,7 @@ private:
 
     Allocator allocator;
     Builtins builtins;
+    Node::Ptr builtin_block;
 };
 
 
