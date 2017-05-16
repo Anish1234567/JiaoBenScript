@@ -132,9 +132,7 @@ void AstInterpreter::visit_declare_list(S_DeclareList &decls) {
 void AstInterpreter::visit_condition(S_Condition &cond) {
     JBValue &test = this->eval_exp(*cond.condition);
     if (this->builtins.is_truthy(test)) {
-        S_Block &then_block = static_cast<S_Block &>(*cond.then_block);
-        auto _ = this->enter(then_block);
-        then_block.accept(*this);
+        cond.then_block->accept(*this);
     } else if (cond.else_block) {
         cond.else_block->accept(*this);
     }
@@ -144,7 +142,6 @@ void AstInterpreter::visit_condition(S_Condition &cond) {
 void AstInterpreter::visit_while(S_While &wh) {
     S_Block &block = static_cast<S_Block &>(*wh.block);
     while (this->builtins.is_truthy(this->eval_exp(*wh.condition))) {
-        auto _ = this->enter(block);
         try {
             block.accept(*this);
         } catch (BreakSignal &) {
@@ -482,19 +479,23 @@ void AstInterpreter::handle_call(E_Op &call) {
             }
         }
 
-        // create new frame
+        // eval supplied arguments in current block
+        std::vector<JBValue *> evaluated_args;
+        for (Node::Ptr &item : supplied.args) {
+            evaluated_args.push_back(&this->eval_exp(*item));
+        }
+
+        // create new frame and enter function block
         S_Block &func_block = static_cast<S_Block &>(*func->code.block);
         auto _ = this->enter(func_block, func->parent_frame);
         Frame &func_frame = *this->cur_frame;
 
-        // eval arguments
-        std::vector<JBValue *> arg_values;
         for (size_t i = 0; i < func_max_args; ++i) {
             if (i < supplied.args.size()) {
                 // supplied arguments
-                func_frame.vars[i] = &this->eval_exp(*supplied.args[i]);
+                func_frame.vars[i] = evaluated_args[i];
             } else {
-                // default arguments
+                // eval default arguments in function block
                 assert(decl_list->decls[i].initial);
                 func_frame.vars[i] = &this->eval_exp(*decl_list->decls[i].initial);
             }

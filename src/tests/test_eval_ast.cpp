@@ -226,6 +226,27 @@ TEST_CASE("Test AstInterpreter") {
         CHECK_THROWS_AS(eval_stmt(make_block({ make_return(T(1)) })), BadReturn);
     }
 
+    SECTION("factorial") {
+        eval_stmt(make_decl_list({
+            {"f", make_func(
+                make_decl_list({{"n", nullptr}}),
+                make_block({
+                    make_cond(
+                        make_binop('==', V("n"), T(0)),
+                        make_block({
+                            make_return(T(1))}),
+                        make_block({
+                            make_return(
+                                make_binop('*',
+                                    V("n"),
+                                    make_call(
+                                        V("f"),
+                                        {make_binop('-', V("n"), T(1))})))}))}))}}));
+
+        JBInt n120(120);
+        CHECK_EXP(make_call(V("f"), {T(5)}), n120);
+    }
+
     // TODO: test and, or, explist
 }
 
