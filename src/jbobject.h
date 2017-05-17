@@ -114,7 +114,7 @@ class JBBuiltinFunc : public JBValue {
 public:
     typedef std::function<JBValue &(const std::vector<JBValue *> &)> Func;
 
-    JBBuiltinFunc(Func func) : func(func) {}
+    explicit JBBuiltinFunc(const Func &func) : func(func) {}
 
     virtual std::string repr() const override;
     virtual bool operator==(const JBValue &rhs) const override;

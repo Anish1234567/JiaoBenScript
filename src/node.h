@@ -89,7 +89,7 @@ struct A_DeclareList {
 
 struct S_DeclareList : Node {
     struct PairType {
-        PairType(const ustring name, Node::Ptr initial)
+        PairType(const ustring &name, Node::Ptr initial)
             : name(name), initial(std::move(initial))
         {}
 
@@ -195,7 +195,7 @@ enum class OpCode : uint32_t {
 
 
 struct E_Op : Node {
-    E_Op(OpCode op_code) : op_code(op_code) {}
+    explicit E_Op(OpCode op_code) : op_code(op_code) {}
 
     OpCode op_code;
     std::vector<Node::Ptr> args;
@@ -212,7 +212,7 @@ struct E_Var : Node {
         int index = -1;
     };
 
-    E_Var(const ustring &name) : name(name) {}
+    explicit E_Var(const ustring &name) : name(name) {}
 
     ustring name;
     AttrType attr {};
@@ -236,7 +236,7 @@ struct E_Func : Node {
 template<class ValueType>
 struct _E_Value : Node {
     typedef _E_Value<ValueType> _SelfType;
-    _E_Value<ValueType>(const ValueType &value) : value(value) {}
+    explicit _E_Value<ValueType>(const ValueType &value) : value(value) {}
 
     ValueType value;
 

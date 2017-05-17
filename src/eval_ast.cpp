@@ -20,7 +20,7 @@ class ContinueSignal : public Signal {};
 
 class ReturnSignal : public Signal {
 public:
-    ReturnSignal(JBValue &value) : value(value) {}
+    explicit ReturnSignal(JBValue &value) : value(value) {}
     JBValue &value;
 };
 

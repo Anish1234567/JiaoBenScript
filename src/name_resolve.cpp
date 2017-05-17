@@ -56,7 +56,7 @@ static int add_nonlocal_to_block_attr(S_Block::AttrType &attr, const ustring &na
 
 class Resolver : private TraversalNodeVisitor {
 public:
-    Resolver(S_Block *cur_block) : cur_block(cur_block) {}
+    explicit Resolver(S_Block *cur_block) : cur_block(cur_block) {}
 
     void resolve(Node &node) {
         node.accept(*this);

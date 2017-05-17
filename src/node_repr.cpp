@@ -23,7 +23,6 @@ std::string S_DeclareList::repr(uint32_t indent) const {
     std::string ans;
     ans += _make_indent(indent) + "let ";
 
-    int count = 0;
     std::string comma = "";
     for (const auto &pair : this->decls) {
         ans += comma;
@@ -32,7 +31,6 @@ std::string S_DeclareList::repr(uint32_t indent) const {
         if (pair.initial) {
             ans += " = " + pair.initial->repr(indent + 1);
         }
-        count++;
     }
     ans += ";";
     return ans;

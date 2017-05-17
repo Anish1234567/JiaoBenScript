@@ -9,7 +9,7 @@
 
 class Builtins {
 public:
-    Builtins(Allocator &allocator) : allocator(allocator) {}
+    explicit Builtins(Allocator &allocator) : allocator(allocator) {}
 
     JBValue &builtin_pos(JBValue &lhs);
     JBValue &builtin_neg(JBValue &lhs);

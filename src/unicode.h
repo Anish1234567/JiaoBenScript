@@ -14,7 +14,7 @@ typedef ustring::value_type unichar;
 
 class UnicodeError : public std::runtime_error {
 public:
-    UnicodeError(const std::string &msg) : runtime_error(msg) {}
+    explicit UnicodeError(const std::string &msg) : runtime_error(msg) {}
 };
 
 

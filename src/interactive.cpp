@@ -12,7 +12,9 @@
 #include "string_fmt.hpp"
 
 
-InteractiveRepl::InteractiveRepl() {
+InteractiveRepl::InteractiveRepl()
+    : tokenizer(), parser(), interp()
+{
     this->interp.set_default_builtin_table();
     this->print_start_info();
 }
