@@ -23,7 +23,40 @@ void InteractiveRepl::print_start_info() {
 }
 
 
+#define CATCH_AND_MSG(Type) \
+    catch (Type &exc) { this->error(#Type, exc.what()); }
+
+
 void InteractiveRepl::feed(const std::string &line) {
+    try {
+        this->feed_inner(line);
+    } catch (std::exception &exc) {
+        try {
+            throw;
+        }
+        CATCH_AND_MSG(DecodeError)
+        CATCH_AND_MSG(TokenizerError)
+        CATCH_AND_MSG(ParserError)
+        CATCH_AND_MSG(CompileError)
+        CATCH_AND_MSG(JBError)
+        catch(...) {
+            this->error("Unknown", "unknown exception caught");
+        }
+
+        this->reset();
+    }
+}
+
+
+#undef CATCH_AND_MSG
+
+
+void InteractiveRepl::error(const std::string &type, const std::string &msg) {
+    std::cerr << type << ": " << msg << std::endl;
+}
+
+
+void InteractiveRepl::feed_inner(const std::string &line) {
     ustring uline = u8_decode(line);
     uline.push_back('\n');
 
@@ -106,4 +139,10 @@ std::string InteractiveRepl::read_line(const std::string &prompt) {
 
 bool InteractiveRepl::is_ready() const {
     return this->tokenizer.is_ready() && this->parser.is_empty();
+}
+
+
+void InteractiveRepl::reset() {
+    this->tokenizer.reset();
+    this->parser.reset();
 }

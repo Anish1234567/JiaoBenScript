@@ -17,11 +17,14 @@ public:
     void start();
 private:
     void feed(const std::string &line);
+    void feed_inner(const std::string &line);
+    void error(const std::string &type, const std::string &msg);
     void print_start_info();
     std::string get_input_prompt();
     void print_result(JBValue &value);
     std::string read_line(const std::string &prompt);
     bool is_ready() const;
+    void reset();
 
     bool eof = false;
     int count = 0;
