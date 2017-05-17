@@ -88,15 +88,14 @@ void InteractiveRepl::start() {
 std::string InteractiveRepl::read_line(const std::string &prompt) {
     const char *line = ::readline(prompt.data());
     if (line != nullptr) {
-        if (strlen(line) != 0) {
+        std::string ret(line);
+        free((void *)line);
+
+        if (ret.size() != 0) {
             // non-empty line
-            add_history(line);
-            return line;
-        } else {
-            // empty line
-            free((void *)line);
-            return "";
+            add_history(ret.data());
         }
+        return ret;
     } else {
         // EOF
         this->eof = true;
