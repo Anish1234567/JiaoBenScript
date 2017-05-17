@@ -44,8 +44,9 @@ static int add_nonlocal_to_block_attr(S_Block::AttrType &attr, const ustring &na
     auto it = attr.name_to_nonlocal_index.find(name);
     if (it == attr.name_to_nonlocal_index.end()) {
         int index = static_cast<int>(attr.nonlocal_indexes.size());
-        attr.name_to_nonlocal_index.emplace(name, index);
+        // if resolve_from_block() fails, attr is not updated
         attr.nonlocal_indexes.emplace_back(resolve_from_block(start, name));
+        attr.name_to_nonlocal_index.emplace(name, index);
         return index;
     } else {
         return it->second;

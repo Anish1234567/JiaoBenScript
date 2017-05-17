@@ -265,3 +265,20 @@ TEST_CASE("Test use before declare") {
 
     CHECK_THROWS_AS(resolve_names(*block), NoSuchName);
 }
+
+
+TEST_CASE("Test no such name") {
+    S_Block *block = make_block({
+        make_s_exp(V("a")),
+    });
+    Node::Ptr _(block);
+
+    CHECK_THROWS_AS(resolve_names(*block), NoSuchName);
+
+    // resolve_names() should not corrupt block->attr if failed
+    CHECK(block->attr.local_info.size() == 0);
+    CHECK(block->attr.nonlocal_indexes.size() == 0);
+    CHECK(block->attr.name_to_local_index.size() == 0);
+    CHECK(block->attr.name_to_nonlocal_index.size() == 0);
+    CHECK_THROWS_AS(resolve_names(*block), NoSuchName);
+}
