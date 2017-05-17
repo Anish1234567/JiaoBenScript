@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "sourcepos.h"
 #include "tokenizer.h"
 #include "parser.h"
 #include "eval_ast.h"
@@ -18,7 +19,11 @@ public:
 private:
     void feed(const std::string &line);
     void feed_inner(const std::string &line);
-    void error(const std::string &type, const std::string &msg);
+    void error(const std::string &type, const std::string &msg,
+        const SourcePos &pos_start = SourcePos(), const SourcePos &pos_end = SourcePos()
+    );
+    void print_line_highlights(const SourcePos &start, const SourcePos &end);
+    void print_single_line_highlight(size_t index, size_t start, size_t end);
     void print_start_info();
     std::string get_input_prompt();
     void print_result(JBValue &value);
@@ -32,6 +37,7 @@ private:
     Parser parser;
     AstInterpreter interp;
     std::vector<Node::Ptr> nodes;
+    std::vector<ustring> lines;
 };
 
 

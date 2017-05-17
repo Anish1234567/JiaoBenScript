@@ -24,7 +24,7 @@ void InteractiveRepl::print_start_info() {
 
 
 #define CATCH_AND_MSG(Type) \
-    catch (Type &exc) { this->error(#Type, exc.what()); }
+    catch (Type &exc) { this->error(#Type, exc.what(), exc.pos_start, exc.pos_end); }
 
 
 void InteractiveRepl::feed(const std::string &line) {
@@ -33,8 +33,9 @@ void InteractiveRepl::feed(const std::string &line) {
     } catch (std::exception &exc) {
         try {
             throw;
+        } catch (DecodeError &exc) {
+            this->error("DecodeError", exc.what());
         }
-        CATCH_AND_MSG(DecodeError)
         CATCH_AND_MSG(TokenizerError)
         CATCH_AND_MSG(ParserError)
         CATCH_AND_MSG(CompileError)
@@ -51,14 +52,58 @@ void InteractiveRepl::feed(const std::string &line) {
 #undef CATCH_AND_MSG
 
 
-void InteractiveRepl::error(const std::string &type, const std::string &msg) {
+void InteractiveRepl::error(
+    const std::string &type, const std::string &msg,
+    const SourcePos &pos_start, const SourcePos &pos_end)
+{
     std::cerr << type << ": " << msg << std::endl;
+    if (pos_start.is_valid()) {
+        this->print_line_highlights(pos_start, pos_end);
+    }
+}
+
+
+void InteractiveRepl::print_line_highlights(const SourcePos &start, const SourcePos &end) {
+    assert(start.is_valid() && end.is_valid());
+    assert(static_cast<size_t>(start.lineno) < this->lines.size());
+    assert(static_cast<size_t>(end.lineno) < this->lines.size());
+    if (start.lineno == end.lineno) {
+        this->print_single_line_highlight(
+            static_cast<size_t>(start.lineno),
+            static_cast<size_t>(start.rowno), static_cast<size_t>(end.rowno)
+        );
+    } else {
+        assert(start.lineno < end.lineno);
+        assert(this->lines[start.lineno].size() > 1);
+        this->print_single_line_highlight(
+            static_cast<size_t>(start.lineno),
+            static_cast<size_t>(start.rowno), this->lines[start.lineno].size() - 2
+        );
+        for (int index = start.lineno + 1; index < end.lineno; ++index) {
+            this->print_single_line_highlight(
+                static_cast<size_t>(index), 0, this->lines[static_cast<size_t>(index)].size() - 1);
+        }
+        this->print_single_line_highlight(
+            static_cast<size_t>(end.lineno), 0, static_cast<size_t>(end.rowno)
+        );
+    }
+}
+
+
+void InteractiveRepl::print_single_line_highlight(size_t index, size_t start, size_t end) {
+    assert(index < this->lines.size());
+    const ustring &line = this->lines[index];
+    assert(!line.empty() && line.back() == '\n');
+    assert(start <= end && end < line.size());
+    std::cerr << u8_encode(line);
+    std::cerr << std::string(start, ' ') << std::string(end - start + 1, '~') << std::endl;
 }
 
 
 void InteractiveRepl::feed_inner(const std::string &line) {
     ustring uline = u8_decode(line);
     uline.push_back('\n');
+    this->lines.push_back(uline);
 
     if (this->parser.is_empty()) {
         this->parser.start_repl();
@@ -106,6 +151,7 @@ void InteractiveRepl::start() {
         line = this->read_line(prompt);
 
         if (!(this->is_ready() && line.empty())) {
+            // TODO: skip comment line
             this->feed(line);
         } else {
             // do not increase counter for empty line
@@ -145,4 +191,5 @@ bool InteractiveRepl::is_ready() const {
 void InteractiveRepl::reset() {
     this->tokenizer.reset();
     this->parser.reset();
+    this->lines.clear();
 }
