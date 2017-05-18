@@ -72,7 +72,7 @@ struct S_Block : Node {
     AttrType attr {};
 
     virtual bool operator==(const Node &rhs) const override;
-    virtual std::string repr(uint32_t indent = 0) const;
+    virtual std::string repr(uint32_t indent = 0) const override;
     virtual void accept(NodeVisitor &vis) override;
 };
 
@@ -100,7 +100,7 @@ struct S_DeclareList : Node {
     mutable A_DeclareList attr;
 
     virtual bool operator==(const Node &rhs) const override;
-    virtual std::string repr(uint32_t indent = 0) const;
+    virtual std::string repr(uint32_t indent = 0) const override;
     virtual void accept(NodeVisitor &vis) override;
 };
 
@@ -111,7 +111,7 @@ struct S_Condition : Node {
     Node::Ptr else_block;   // optional, S_Block or S_Condition
 
     virtual bool operator==(const Node &rhs) const override;
-    virtual std::string repr(uint32_t indent = 0) const;
+    virtual std::string repr(uint32_t indent = 0) const override;
     virtual void accept(NodeVisitor &vis) override;
 };
 
@@ -121,7 +121,7 @@ struct S_While : Node {
     Node::Ptr block;
 
     virtual bool operator==(const Node &rhs) const override;
-    virtual std::string repr(uint32_t indent = 0) const;
+    virtual std::string repr(uint32_t indent = 0) const override;
     virtual void accept(NodeVisitor &vis) override;
 };
 
@@ -133,19 +133,19 @@ struct S_Return : Node {
     Node::Ptr value;    // optional
 
     virtual bool operator==(const Node &rhs) const override;
-    virtual std::string repr(uint32_t indent = 0) const;
+    virtual std::string repr(uint32_t indent = 0) const override;
     virtual void accept(NodeVisitor &vis) override;
 };
 
 
 struct S_Break : Node {
-    virtual std::string repr(uint32_t indent = 0) const;
+    virtual std::string repr(uint32_t indent = 0) const override;
     virtual void accept(NodeVisitor &vis) override;
 };
 
 
 struct S_Continue : Node {
-    virtual std::string repr(uint32_t indent = 0) const;
+    virtual std::string repr(uint32_t indent = 0) const override;
     virtual void accept(NodeVisitor &vis) override;
 };
 
@@ -154,13 +154,13 @@ struct S_Exp : Node {
     Node::Ptr value;
 
     virtual bool operator==(const Node &rhs) const override;
-    virtual std::string repr(uint32_t indent = 0) const;
+    virtual std::string repr(uint32_t indent = 0) const override;
     virtual void accept(NodeVisitor &vis) override;
 };
 
 
 struct S_Empty : Node {
-    virtual std::string repr(uint32_t indent = 0) const;
+    virtual std::string repr(uint32_t indent = 0) const override;
     virtual void accept(NodeVisitor &vis) override;
 };
 
@@ -201,7 +201,7 @@ struct E_Op : Node {
     std::vector<Node::Ptr> args;
 
     virtual bool operator==(const Node &rhs) const override;
-    virtual std::string repr(uint32_t indent = 0) const;
+    virtual std::string repr(uint32_t indent = 0) const override;
     virtual void accept(NodeVisitor &vis) override;
 };
 
@@ -218,7 +218,7 @@ struct E_Var : Node {
     AttrType attr {};
 
     virtual bool operator==(const Node &rhs) const override;
-    virtual std::string repr(uint32_t indent = 0) const;
+    virtual std::string repr(uint32_t indent = 0) const override;
     virtual void accept(NodeVisitor &vis) override;
 };
 
@@ -228,7 +228,7 @@ struct E_Func : Node {
     Node::Ptr block;
 
     virtual bool operator==(const Node &rhs) const override;
-    virtual std::string repr(uint32_t indent = 0) const;
+    virtual std::string repr(uint32_t indent = 0) const override;
     virtual void accept(NodeVisitor &vis) override;
 };
 
@@ -244,7 +244,7 @@ struct _E_Value : Node {
         const _SelfType *other = dynamic_cast<const _SelfType *>(&rhs);
         return other != nullptr && this->value == other->value;
     }
-    virtual std::string repr(uint32_t indent = 0) const;
+    virtual std::string repr(uint32_t indent = 0) const override;
     virtual void accept(NodeVisitor &vis) override;
 };
 
@@ -259,13 +259,13 @@ struct E_List : Node {
     std::vector<Node::Ptr> value;
 
     virtual bool operator==(const Node &rhs) const override;
-    virtual std::string repr(uint32_t indent = 0) const;
+    virtual std::string repr(uint32_t indent = 0) const override;
     virtual void accept(NodeVisitor &vis) override;
 };
 
 
 struct E_Null : Node {
-    virtual std::string repr(uint32_t indent = 0) const;
+    virtual std::string repr(uint32_t indent = 0) const override;
     virtual void accept(NodeVisitor &vis) override;
 };
 

@@ -81,7 +81,7 @@ public:
 
 class JBList : public JBValue {
 public:
-    virtual void each_ref(std::function<void (JBObject &)> callback);
+    virtual void each_ref(std::function<void (JBObject &)> callback) override;
 
     virtual bool is_truthy() const override;
     virtual std::string repr() const override;
@@ -99,7 +99,7 @@ public:
     JBFunc(Frame *frame, const E_Func &code)
         : parent_frame(frame), code(code)
     {}
-    virtual void each_ref(std::function<void (JBObject &)> callback);
+    virtual void each_ref(std::function<void (JBObject &)> callback) override;
     virtual std::string repr() const override;
     virtual bool operator==(const JBValue &rhs) const override;
 

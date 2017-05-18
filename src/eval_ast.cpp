@@ -304,7 +304,7 @@ Frame &AstInterpreter::create_frame(Frame *parent, S_Block &block) {
     Frame &frame = this->create<Frame>();
     frame.parent = parent;
     frame.block = &block;
-    frame.vars = std::move(std::vector<JBValue *> (block.attr.local_info.size(), nullptr));
+    frame.vars = std::vector<JBValue *>(block.attr.local_info.size(), nullptr);
     return frame;
 }
 

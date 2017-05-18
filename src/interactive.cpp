@@ -82,8 +82,8 @@ void InteractiveRepl::print_line_highlights(const SourcePos &start, const Source
             static_cast<size_t>(start.rowno), this->lines[start.lineno].size() - 2
         );
         for (int index = start.lineno + 1; index < end.lineno; ++index) {
-            this->print_single_line_highlight(
-                static_cast<size_t>(index), 0, this->lines[static_cast<size_t>(index)].size() - 1);
+            size_t i = static_cast<size_t>(index);
+            this->print_single_line_highlight(i, 0, this->lines[i].size() - 1);
         }
         this->print_single_line_highlight(
             static_cast<size_t>(end.lineno), 0, static_cast<size_t>(end.rowno)
