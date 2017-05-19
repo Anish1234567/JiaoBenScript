@@ -125,8 +125,12 @@ void InteractiveRepl::start() {
         }
     }
 
-    // last new line
-    std::cout << std::endl;
+    if (!this->tokenizer.is_ready() || (!parser.is_empty() && !this->parser.can_end())) {
+        std::cerr << "Error: expect more input" << std::endl;
+    } else {
+        // last new line
+        std::cout << std::endl;
+    }
 }
 
 
