@@ -67,9 +67,8 @@ void AstInterpreter::set_default_builtin_table() {
 
 
 void AstInterpreter::eval_incomplete_raw_block(S_Block &block) {
-    assert(this->cur_frame == nullptr);
     this->analyze_node(block);
-    this->cur_frame = &this->create_frame(nullptr, block);
+    this->cur_frame = &this->create_frame(this->cur_frame, block);
     this->handle_block(block);
 }
 
@@ -111,7 +110,6 @@ void AstInterpreter::visit_block(S_Block &block) {
 
 
 void AstInterpreter::visit_program(Program &prog) {
-    assert(this->cur_frame == nullptr);
     this->visit_block(prog);
 }
 

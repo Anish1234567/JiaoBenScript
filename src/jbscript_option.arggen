@@ -1,0 +1,3 @@
+JBScriptOption = [
+    arg('file', default='-'),
+]

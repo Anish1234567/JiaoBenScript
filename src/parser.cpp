@@ -116,7 +116,9 @@ void Parser::shift(Parser::StateHandler state) {
 
 
 Node::Ptr Parser::pop_result() {
-    assert(this->can_end());
+    if (!this->can_end()) {
+        throw ParserError("Not finished");
+    }
     this->feed(Token(TokenCode::END));
     assert(this->nodes.size() == 1);
     assert(this->states.size() == 1);

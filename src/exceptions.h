@@ -41,6 +41,7 @@ public:
     using BaseException::BaseException;
 };
 
+
 template<class NodeType>
 class _BadStmt : public CompileError {
 public:
