@@ -232,10 +232,26 @@ JBValue &Builtins::builtin_list_dup(JBList &lhs, JBValue &n) {
 }
 
 
-JBValue &Builtins::builtin_list_append(const std::vector<JBValue *> &args) {
-    if (args.size() != 2) {
-        throw JBError("Type error: expect 2 args");
+#define ARG_NUM(num) \
+    if (args.size() != num) { \
+        throw JBError("Type error: expect " #num " args"); \
     }
+
+
+JBValue &Builtins::builtin_func_list_size(const std::vector<JBValue *> &args) {
+    ARG_NUM(1);
+
+    if (JBList *list = dynamic_cast<JBList *>(args[0])) {
+        return this->create<JBInt>(list->value.size());
+    } else {
+        throw JBError("Type error: expect list");
+    }
+}
+
+
+JBValue &Builtins::builtin_func_list_append(const std::vector<JBValue *> &args) {
+    ARG_NUM(2);
+
     if (JBList *list = dynamic_cast<JBList *>(args[0])) {
         list->value.push_back(args[1]);
         return *list;
@@ -245,7 +261,7 @@ JBValue &Builtins::builtin_list_append(const std::vector<JBValue *> &args) {
 }
 
 
-JBValue &Builtins::builtin_print(const std::vector<JBValue *> &args) {
+JBValue &Builtins::builtin_func_print(const std::vector<JBValue *> &args) {
     const char *space = "";
     for (JBValue *item : args) {
         std::cout << space << item->repr();
@@ -254,3 +270,6 @@ JBValue &Builtins::builtin_print(const std::vector<JBValue *> &args) {
     std::cout << std::endl;
     return this->create<JBNull>();
 }
+
+
+#undef ARG_NUM

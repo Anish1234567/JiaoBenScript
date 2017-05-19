@@ -34,8 +34,9 @@ public:
     JBValue &builtin_list_cat(JBList &lhs, JBValue &rhs);
     JBValue &builtin_list_dup(JBList &lhs, JBValue &n);
 
-    JBValue &builtin_list_append(const std::vector<JBValue *> &args);
-    JBValue &builtin_print(const std::vector<JBValue *> &args);
+    JBValue &builtin_func_list_size(const std::vector<JBValue *> &args);
+    JBValue &builtin_func_list_append(const std::vector<JBValue *> &args);
+    JBValue &builtin_func_print(const std::vector<JBValue *> &args);
 
 private:
     // FIXME: duplicated code

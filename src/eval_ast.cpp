@@ -60,7 +60,7 @@ void AstInterpreter::set_builtin_table(const std::vector<std::pair<ustring, JBVa
 #define BUILTIN_ITEM(name) { \
     USTRING(#name), \
     &this->create<JBBuiltinFunc>(\
-        std::bind(&Builtins::builtin_ ## name, &this->builtins, std::placeholders::_1)) \
+        std::bind(&Builtins::builtin_func_ ## name, &this->builtins, std::placeholders::_1)) \
 }
 
 
@@ -68,6 +68,7 @@ void AstInterpreter::set_default_builtin_table() {
     using namespace std::placeholders;
     this->set_builtin_table(std::vector<std::pair<ustring, JBValue *>> {
         BUILTIN_ITEM(print),
+        BUILTIN_ITEM(list_size),
         BUILTIN_ITEM(list_append),
     });
 }
