@@ -383,7 +383,8 @@ Token *NumberState::to_token() const {
 
 void Tokenizer::st_id(unichar ch) {
     // TODO: limit length
-    if (ch == '_' || is_alpha(ch)) {    // TODO: unicode
+    // TODO: allow unicode
+    if (ch == '_' || is_alpha(ch) || is_digit(ch)) {
         this->id_state.value.push_back(ch);
     } else {
         TokenId *tok = new TokenId(this->id_state.value);
