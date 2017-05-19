@@ -57,13 +57,23 @@ void AstInterpreter::set_builtin_table(const std::vector<std::pair<ustring, JBVa
 }
 
 
+#define BUILTIN_ITEM(name) { \
+    USTRING(#name), \
+    &this->create<JBBuiltinFunc>(\
+        std::bind(&Builtins::builtin_ ## name, &this->builtins, std::placeholders::_1)) \
+}
+
+
 void AstInterpreter::set_default_builtin_table() {
     using namespace std::placeholders;
     this->set_builtin_table(std::vector<std::pair<ustring, JBValue *>> {
-        {USTRING("print"), &this->create<JBBuiltinFunc>(
-            std::bind(&Builtins::builtin_print, &this->builtins, _1))},
+        BUILTIN_ITEM(print),
+        BUILTIN_ITEM(list_append),
     });
 }
+
+
+#undef BUILTIN_ITEM
 
 
 void AstInterpreter::eval_incomplete_raw_block(S_Block &block) {

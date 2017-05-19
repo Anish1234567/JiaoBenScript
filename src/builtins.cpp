@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cmath>
 #include <functional>
 #include <iosfwd>
@@ -63,9 +64,35 @@ do_simple_binop<std::op_name<int64_t>, std::op_name<double>>(this->allocator, lh
 
 
 JBValue &Builtins::builtin_add(JBValue &lhs, JBValue &rhs) {
-    // TODO: string cat
-    // TODO: list cat
-    return SIMPLE_BINOP(plus);
+    if (JBString *str = dynamic_cast<JBString *>(&lhs)) {
+        return this->builtin_str_cat(*str, rhs);
+    } else if (JBList *list = dynamic_cast<JBList *>(&lhs)) {
+        return this->builtin_list_cat(*list, rhs);
+    } else {
+        return SIMPLE_BINOP(plus);
+    }
+}
+
+
+JBValue& Builtins::builtin_str_cat(JBString &lhs, JBValue &rhs) {
+    if (JBString *rstr = dynamic_cast<JBString *>(&rhs)) {
+        return this->create<JBString>(lhs.value + rstr->value);
+    } else {
+        throw JBError("Type error: expect string");
+    }
+}
+
+
+JBValue& Builtins::builtin_list_cat(JBList &lhs, JBValue &rhs) {
+    if (JBList *rlist = dynamic_cast<JBList *>(&rhs)) {
+        JBList &ret = this->create<JBList>();
+        ret.value = lhs.value;
+        ret.value.reserve(lhs.value.size() + rlist->value.size());
+        ret.value.insert(ret.value.end(), rlist->value.begin(), rlist->value.end());
+        return ret;
+    } else {
+        throw JBError("Type error: expect list");
+    }
 }
 
 
@@ -75,7 +102,13 @@ JBValue &Builtins::builtin_sub(JBValue &lhs, JBValue &rhs) {
 
 
 JBValue &Builtins::builtin_mul(JBValue &lhs, JBValue &rhs) {
-    return SIMPLE_BINOP(multiplies);
+    if (JBList *llist = dynamic_cast<JBList *>(&lhs)) {
+        return this->builtin_list_dup(*llist, rhs);
+    } else if (JBList *rlist = dynamic_cast<JBList *>(&rhs)) {
+        return this->builtin_list_dup(*rlist, lhs);
+    } else {
+        return SIMPLE_BINOP(multiplies);
+    }
 }
 
 
@@ -181,6 +214,34 @@ JBValue &Builtins::builtin_setitem(JBValue &base, JBValue &offset, JBValue &valu
 
 JBValue &Builtins::builtin_getitem(JBValue &base, JBValue &offset) {
     return **getitem(base, offset);
+}
+
+
+JBValue &Builtins::builtin_list_dup(JBList &lhs, JBValue &n) {
+    if (JBInt *int_obj = dynamic_cast<JBInt *>(&n)) {
+        int64_t num = std::max(decltype(int_obj->value)(0), int_obj->value);
+        JBList &ret = this->create<JBList>();
+        ret.value.reserve(int_obj->value * lhs.value.size());
+        for (int i = 0; i < num; ++i) {
+            ret.value.insert(ret.value.end(), lhs.value.begin(), lhs.value.end());
+        }
+        return ret;
+    } else {
+        throw JBError("Type error: int expected");
+    }
+}
+
+
+JBValue &Builtins::builtin_list_append(const std::vector<JBValue *> &args) {
+    if (args.size() != 2) {
+        throw JBError("Type error: expect 2 args");
+    }
+    if (JBList *list = dynamic_cast<JBList *>(args[0])) {
+        list->value.push_back(args[1]);
+        return *list;
+    } else {
+        throw JBError("Type error: expect list");
+    }
 }
 
 

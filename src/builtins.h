@@ -11,6 +11,7 @@ class Builtins {
 public:
     explicit Builtins(Allocator &allocator) : allocator(allocator) {}
 
+    // TODO: slice
     JBValue &builtin_pos(JBValue &lhs);
     JBValue &builtin_neg(JBValue &lhs);
     JBValue &builtin_add(JBValue &lhs, JBValue &rhs);
@@ -29,6 +30,11 @@ public:
     bool is_truthy(JBValue &value);
     JBValue &builtin_setitem(JBValue &base, JBValue &offset, JBValue &value);
     JBValue &builtin_getitem(JBValue &base, JBValue &offset);
+    JBValue &builtin_str_cat(JBString &lhs, JBValue &rhs);
+    JBValue &builtin_list_cat(JBList &lhs, JBValue &rhs);
+    JBValue &builtin_list_dup(JBList &lhs, JBValue &n);
+
+    JBValue &builtin_list_append(const std::vector<JBValue *> &args);
     JBValue &builtin_print(const std::vector<JBValue *> &args);
 
 private:
