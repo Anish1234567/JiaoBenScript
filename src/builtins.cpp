@@ -6,6 +6,7 @@
 
 #include "builtins.h"
 #include "exceptions.h"
+#include "unicode.h"
 
 
 // TODO: merge this module into eval_ast for better error handling
@@ -264,7 +265,11 @@ JBValue &Builtins::builtin_func_list_append(const std::vector<JBValue *> &args) 
 JBValue &Builtins::builtin_func_print(const std::vector<JBValue *> &args) {
     const char *space = "";
     for (JBValue *item : args) {
-        std::cout << space << item->repr();
+        if (JBString *str = dynamic_cast<JBString *>(item)) {
+            std::cout << u8_encode(str->value);
+        } else {
+            std::cout << space << item->repr();
+        }
         space = " ";
     }
     std::cout << std::endl;
