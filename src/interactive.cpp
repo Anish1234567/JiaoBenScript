@@ -8,6 +8,7 @@
 
 #include "interactive.h"
 #include "exceptions.h"
+#include "line_highlight.h"
 #include "unicode.h"
 #include "string_fmt.hpp"
 
@@ -60,45 +61,8 @@ void InteractiveRepl::error(
 {
     std::cerr << type << ": " << msg << std::endl;
     if (pos_start.is_valid()) {
-        this->print_line_highlights(pos_start, pos_end);
+        line_lighlight(this->lines, pos_start, pos_end);
     }
-}
-
-
-void InteractiveRepl::print_line_highlights(const SourcePos &start, const SourcePos &end) {
-    assert(start.is_valid() && end.is_valid());
-    assert(static_cast<size_t>(start.lineno) < this->lines.size());
-    assert(static_cast<size_t>(end.lineno) < this->lines.size());
-    if (start.lineno == end.lineno) {
-        this->print_single_line_highlight(
-            static_cast<size_t>(start.lineno),
-            static_cast<size_t>(start.rowno), static_cast<size_t>(end.rowno)
-        );
-    } else {
-        assert(start.lineno < end.lineno);
-        assert(this->lines[start.lineno].size() > 1);
-        this->print_single_line_highlight(
-            static_cast<size_t>(start.lineno),
-            static_cast<size_t>(start.rowno), this->lines[start.lineno].size() - 2
-        );
-        for (int index = start.lineno + 1; index < end.lineno; ++index) {
-            size_t i = static_cast<size_t>(index);
-            this->print_single_line_highlight(i, 0, this->lines[i].size() - 1);
-        }
-        this->print_single_line_highlight(
-            static_cast<size_t>(end.lineno), 0, static_cast<size_t>(end.rowno)
-        );
-    }
-}
-
-
-void InteractiveRepl::print_single_line_highlight(size_t index, size_t start, size_t end) {
-    assert(index < this->lines.size());
-    const ustring &line = this->lines[index];
-    assert(!line.empty() && line.back() == '\n');
-    assert(start <= end && end < line.size());
-    std::cerr << u8_encode(line);
-    std::cerr << std::string(start, ' ') << std::string(end - start + 1, '~') << std::endl;
 }
 
 
